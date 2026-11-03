@@ -5,14 +5,55 @@
 [![MCP Protocol](https://img.shields.io/badge/MCP-Standard%202025-purple.svg)](https://modelcontextprotocol.io/)
 [![Platform: Claude Code | Cursor | Antigravity | CLI](https://img.shields.io/badge/platforms-Claude%20Code%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20CLI-success.svg)](https://github.com/ghazy2001/hivemesh)
 
-**HiveMesh** is a universal, platform-agnostic multi-agent orchestration engine. It transforms any AI coding agent — **Claude Code**, **Cursor**, **Antigravity**, **Windsurf**, or your terminal — into an autonomous team of parallel agents working in isolated Git worktrees with:
+**HiveMesh** is an adaptive, platform-agnostic multi-agent orchestration engine. It transforms any AI coding agent — **Claude Code**, **Cursor**, **Antigravity**, **Windsurf**, or your terminal — into a dynamically-sized swarm of specialized agents working in isolated Git worktrees.
 
-1. 📋 **SQLite FTS5 Blackboard**: Native in-memory full-text search with BM25 ranking for instant zero-token architectural discovery reuse.
-2. 🔬 **Deep TypeScript AST Conflict Engine**: Real-time detection of function and interface signature changes across branches to prevent semantic build breaks.
-3. 🤝 **P2P Contract Negotiation**: Inter-agent interface handshakes before coding begins.
-4. 💀 **Adversarial Self-Play**: Automated Red-Team vs Blue-Team fuzzing and probing loop for edge cases, race conditions, and vulnerabilities.
-5. 📊 **Mission Control Canvas**: Live visual mission control topology rendered directly in your agent environment.
-6. 💻 **Universal CLI**: Launch swarms directly from any terminal with `npx hivemesh run`.
+Instead of rigid, hardcoded roles (e.g. "one backend, one frontend"), HiveMesh's orchestrator **dynamically evaluates your prompt**, determines the optimal swarm size (from 1 to 5+ agents), and slices the codebase into independent, non-overlapping domain worktrees.
+
+---
+
+## 🧠 Adaptive Swarm Sizing & Dynamic Decomposition
+
+The Orchestrator reads your prompt, estimates the blast radius, and dynamically provisions specialized agents tailored strictly to the task:
+
+### 💡 Example: *"Add Dark Mode across the entire app"*
+Instead of generic roles, the Orchestrator dynamically spawns 4 targeted domain specialists:
+- 🎨 **`agent-theme-tokens`**: Configures Tailwind design tokens, CSS variables, and color schemes.
+- 🖼️ **`agent-shell-layout`**: Migrates Sidebar, Navbar, Settings dialogs, and Theme Toggle controls.
+- 📊 **`agent-data-views`**: Updates Data Tables, Kanban cards, Charts, and Form inputs.
+- 👁️ **`agent-a11y-auditor`**: Runs automated WCAG contrast tests and visual edge-case checks.
+
+### 💡 Example: *"Refactor GraphQL Permissions"*
+- 🔒 **`agent-auth-guards`**: Updates NestJS permission decorators and JWT payload extraction.
+- 📋 **`agent-schema-types`**: Updates GraphQL resolver schemas and return types.
+- 💀 **`agent-adversary`**: Red-team agent attempting unauthorized access and privilege escalation.
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart TD
+    User["👤 Developer Prompt\n(e.g. 'Add Dark Mode to the frontend')"] --> Orch["🧠 HiveMesh Orchestrator\n• Analyzes Complexity & Scope\n• Decides Swarm Size (1–5 Agents)\n• Slices Project into Domain Worktrees"]
+    
+    Orch --> |"Provisions Dynamic Worktrees"| WTM["Git Worktree Manager"]
+    
+    WTM --> A1["🔨 Builder: Domain Slice A\n(e.g. theme-tokens)"]
+    WTM --> A2["🔨 Builder: Domain Slice B\n(e.g. layout-shell)"]
+    WTM --> A3["🔨 Builder: Domain Slice C\n(e.g. data-views)"]
+    WTM --> A4["💀 Adversary: Quality & Security\n(e.g. a11y & contrast auditor)"]
+    
+    A1 <--> |"P2P Contracts"| A2
+    A1 --> |"Post Discoveries"| BB["📋 SQLite FTS5 Blackboard"]
+    A2 & A3 --> |"Instant FTS5 Search"| BB
+    
+    A1 --> |"AST Diff"| AST["🔬 AST Conflict Watcher"]
+    AST --> |"Real-time Conflict Warnings"| A2
+    
+    A4 --> |"Adversarial Self-Play Loops"| A1 & A2 & A3
+    
+    A1 & A2 & A3 & A4 --> CRIT["🧐 Integration Critic"]
+    CRIT --> |"Merge & Verify"| PR["✅ Final Verified PR"]
+```
 
 ---
 
@@ -27,32 +68,6 @@ Because HiveMesh is built on the open **Model Context Protocol (MCP)**, it works
 | **Google Antigravity** | Plugin Bundle (`~/.gemini/config/plugins/hivemesh`) | ✅ Full |
 | **Windsurf / Codeium** | Cascade MCP Config (`mcp_config.json`) | ✅ Full |
 | **Terminal / CI/CD** | Standalone CLI (`npx hivemesh run`) | ✅ Full |
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-flowchart TD
-    User["👤 Developer: 'Build feature X with parallel team'"] --> Orch["🧠 Swarm Orchestrator (Claude / Cursor / Any Agent)"]
-    Orch --> |"1. Create Worktrees"| WTM["Git Worktree Manager"]
-    WTM --> B1["🔨 Builder 1 (Backend API)"]
-    WTM --> B2["🎨 Builder 2 (Frontend UI)"]
-    WTM --> ADV["💀 Adversary (Red Team Fuzzer)"]
-    
-    B1 <--> |"P2P Contracts"| B2
-    B1 --> |"Post Insights"| BB["📋 SQLite FTS5 Blackboard"]
-    B2 --> |"FTS5 Search"| BB
-    
-    B1 --> |"AST Diff"| AST["🔬 AST Conflict Watcher"]
-    AST --> |"Warn Breaking Changes"| B2
-    
-    ADV --> |"Self-Play Attack Loop"| B1
-    ADV --> |"Self-Play Attack Loop"| B2
-    
-    B1 & B2 & ADV --> CRIT["🧐 Integration Critic"]
-    CRIT --> |"Merge & Verify"| PR["✅ Final Verified PR"]
-```
 
 ---
 
@@ -88,8 +103,11 @@ Copy or link to `~/.gemini/config/plugins/hivemesh/` and restart Antigravity.
 # Verify environment
 npx hivemesh doctor
 
-# Run parallel swarm
-npx hivemesh run "Implement OAuth passkeys with UI and attack tests" --roles backend,frontend,security
+# Run parallel swarm with dynamic automatic sizing
+npx hivemesh run "Implement dark mode theme across views and navigation"
+
+# Or explicitly define custom domain slices
+npx hivemesh run "Dark mode migration" --roles theme-tokens,shell-layout,data-views,a11y-auditor
 
 # Check status
 npx hivemesh status
@@ -104,7 +122,7 @@ npx hivemesh clean <swarmId>
 
 | Tool | Description |
 |:-----|:------------|
-| `hivemesh_create_swarm` | Creates isolated Git worktrees and branches for parallel agents. |
+| `hivemesh_create_swarm` | Creates isolated Git worktrees with dynamic task-specific roles. |
 | `hivemesh_swarm_status` | Returns the real-time status of all agents and active worktrees. |
 | `hivemesh_destroy_swarm` | Cleans up worktrees and branches when work is done. |
 | `hivemesh_blackboard_post` | Publishes architectural discoveries into SQLite with FTS5 indexing. |
@@ -119,11 +137,11 @@ npx hivemesh clean <swarmId>
 
 ---
 
-## 👥 Specialized Agent Roles
+## 👥 Dynamic Agent Roles
 
-- **`hive-orchestrator`**: Master coordinator, decomposes prompts, creates swarms, coordinates merges.
-- **`hive-builder`**: Feature implementation specialist operating strictly in an isolated worktree.
-- **`hive-adversary`**: Red-team security tester that fuzzes inputs, tests race conditions, and runs adversarial self-play rounds.
+- **`hive-orchestrator`**: Master planner. Reads prompt, estimates scope, sizes swarm, slices domain, creates worktrees, coordinates merges.
+- **`hive-builder`**: Domain implementation specialist operating strictly in an assigned worktree slice.
+- **`hive-adversary`**: Red-team quality/security tester that probes edge cases, race conditions, or domain vulnerabilities.
 - **`hive-critic`**: Integration reviewer that verifies AST changes, contracts, builds, and test runs before merge.
 
 ---

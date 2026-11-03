@@ -90,6 +90,23 @@ async function runDoctor() {
   console.log("\n\x1b[32m✓ HiveMesh is fully operational and ready to orchestrate swarms!\x1b[0m\n");
 }
 
+function inferDynamicRoles(prompt) {
+  const p = prompt.toLowerCase();
+  if (p.includes("dark mode") || p.includes("theme") || p.includes("css") || p.includes("style") || p.includes("color")) {
+    return ["theme-tokens", "shell-layout", "data-views", "a11y-auditor"];
+  }
+  if (p.includes("auth") || p.includes("login") || p.includes("passkey") || p.includes("oauth") || p.includes("session")) {
+    return ["auth-guards", "token-services", "ui-modals", "security-adversary"];
+  }
+  if (p.includes("database") || p.includes("migration") || p.includes("schema") || p.includes("orm") || p.includes("postgres")) {
+    return ["schema-migrations", "entity-models", "repository-services", "integrity-tests"];
+  }
+  if (p.includes("refactor") || p.includes("clean") || p.includes("perf") || p.includes("optimize")) {
+    return ["core-refactor", "api-consumers", "regression-tests"];
+  }
+  return ["domain-logic", "ui-surface", "quality-adversary"];
+}
+
 async function handleRun() {
   const taskDesc = args[1];
   if (!taskDesc || taskDesc.startsWith("--")) {
@@ -99,7 +116,7 @@ async function handleRun() {
 
   printBanner();
 
-  let roles = ["backend", "frontend", "security"];
+  let roles = inferDynamicRoles(taskDesc);
   let baseBranch = "main";
   let targetDir = process.cwd();
 

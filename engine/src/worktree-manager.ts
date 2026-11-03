@@ -1,6 +1,7 @@
 /**
  * HiveMesh Worktree Manager — Creates and manages isolated Git worktrees
  * for each agent in a swarm, ensuring zero file-level conflicts.
+ * Supports cross-process persistence via .hivemesh/swarms.json.
  */
 
 import { execSync } from "child_process";
@@ -23,11 +24,49 @@ export interface SwarmInfo {
 
 const swarms = new Map<string, SwarmInfo>();
 
+function getStoragePath(projectPath: string): string {
+  const dir = path.join(projectPath, ".hivemesh");
+  if (!fs.existsSync(dir)) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+    } catch {
+      // Ignore
+    }
+  }
+  return path.join(dir, "swarms.json");
+}
+
+function loadPersistedSwarms(projectPath?: string): void {
+  if (!projectPath || !fs.existsSync(projectPath)) return;
+  const file = getStoragePath(projectPath);
+  if (fs.existsSync(file)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(file, "utf-8")) as SwarmInfo[];
+      for (const s of data) {
+        swarms.set(s.id, s);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+function savePersistedSwarms(projectPath: string): void {
+  try {
+    const file = getStoragePath(projectPath);
+    const list = Array.from(swarms.values()).filter((s) => s.projectPath === projectPath);
+    fs.writeFileSync(file, JSON.stringify(list, null, 2), "utf-8");
+  } catch {
+    // Ignore
+  }
+}
+
 export function createSwarm(
   projectPath: string,
   roles: string[],
   baseBranch = "main"
 ): SwarmInfo {
+  loadPersistedSwarms(projectPath);
   const id = `swarm_${Date.now().toString(36)}`;
   const worktrees: WorktreeInfo[] = [];
 
@@ -76,7 +115,6 @@ export function createSwarm(
         status: "active",
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
       worktrees.push({
         path: worktreePath,
         branch: branchName,
@@ -88,10 +126,14 @@ export function createSwarm(
 
   const swarm: SwarmInfo = { id, projectPath, worktrees, createdAt: Date.now() };
   swarms.set(id, swarm);
+  savePersistedSwarms(projectPath);
   return swarm;
 }
 
-export function getSwarmStatus(swarmId?: string): SwarmInfo[] {
+export function getSwarmStatus(swarmId?: string, projectPath?: string): SwarmInfo[] {
+  if (projectPath) {
+    loadPersistedSwarms(projectPath);
+  }
   if (swarmId) {
     const swarm = swarms.get(swarmId);
     return swarm ? [swarm] : [];
@@ -109,10 +151,14 @@ export function updateWorktreeStatus(
   const wt = swarm.worktrees.find((w) => w.role === role);
   if (!wt) return false;
   wt.status = status;
+  savePersistedSwarms(swarm.projectPath);
   return true;
 }
 
-export function destroySwarm(swarmId: string): { success: boolean; message: string } {
+export function destroySwarm(swarmId: string, projectPath?: string): { success: boolean; message: string } {
+  if (projectPath) {
+    loadPersistedSwarms(projectPath);
+  }
   const swarm = swarms.get(swarmId);
   if (!swarm) {
     return { success: false, message: `Swarm ${swarmId} not found` };
@@ -151,7 +197,9 @@ export function destroySwarm(swarmId: string): { success: boolean; message: stri
     }
   }
 
+  const proj = swarm.projectPath;
   swarms.delete(swarmId);
+  savePersistedSwarms(proj);
 
   if (errors.length > 0) {
     return {

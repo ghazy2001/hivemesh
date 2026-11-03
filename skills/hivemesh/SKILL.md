@@ -1,107 +1,54 @@
 ---
 name: hivemesh
 description: >-
-  Orchestrate multi-agent swarms for parallel development. Creates isolated Git
-  worktrees, shares knowledge through a blackboard, detects AST-level semantic
-  conflicts, facilitates P2P contract negotiation between agents, runs adversarial
-  red-team testing, and provides a live mission control dashboard. Use when the
-  user wants to run multiple agents in parallel on the same project, create a
-  development swarm, or coordinate parallel feature work.
+  Adaptive multi-agent swarm engine for parallel development. Dynamically sizes
+  swarms based on prompt complexity, creates isolated Git worktrees for domain slices
+  (e.g., tokens, layout, data views), shares knowledge via SQLite FTS5 blackboard,
+  detects AST-level semantic conflicts, facilitates P2P contract negotiation, and
+  runs adversarial red-team testing. Use when running parallel agents on any task.
 ---
 
-# HiveMesh — Multi-Agent Swarm Engine
+# HiveMesh — Adaptive Multi-Agent Swarm Engine
 
-HiveMesh lets you orchestrate a coordinated team of parallel agents that work
-on the same codebase without stepping on each other.
+HiveMesh lets you orchestrate a dynamically sized, domain-specialized team of parallel agents tailored specifically to your prompt.
 
-## Quick Start
+## Adaptive Sizing & Domain Decomposition
 
-To create a swarm, you need:
-1. A git repository as the project root
-2. A list of roles (what each agent will do)
-3. A task description to decompose
+Do NOT assume fixed roles like "backend vs frontend". Instead, inspect the task and decompose by **functional slices**:
 
-### Step 1: Analyze the Task
+| Task Complexity | Recommended Swarm Size | Decomposition Pattern |
+|:----------------|:-----------------------|:----------------------|
+| **Focused / Small** (1–3 files) | 1–2 agents | `core-implementation` + `validation-tests` |
+| **Domain Feature** (e.g. Dark Mode) | 2–3 agents | `theme-tokens`, `shell-layout`, `view-components` |
+| **Cross-Cutting Feature** (e.g. Auth) | 3–4 agents | `auth-core`, `ui-flows`, `storage-models`, `security-adversary` |
+| **Full Platform Overhaul** | 4–5 agents | Sliced by functional modules or package boundaries |
 
-Break the user's request into independent subtasks. Good decomposition means:
-- Each subtask can be worked on independently
-- Dependencies between subtasks are expressed as contracts
-- Each subtask maps to a clear role (backend, frontend, database, security, tests)
+## Quick Start Steps
 
-### Step 2: Create the Swarm
+### Step 1: Analyze & Decompose
+Inspect the prompt. Decide:
+1. How many agents are needed (don't over-provision: 2–3 focused agents are faster than 5 scattered ones).
+2. What specific domain slice each agent owns (e.g. `['theme-tokens', 'shell-layout', 'a11y-auditor']`).
 
-Use the `hivemesh_create_swarm` tool:
-- `projectPath`: absolute path to the git repo
-- `roles`: array of role names (e.g., `["backend", "frontend", "security"]`)
-- `baseBranch`: branch to fork from (default: "main")
-
-This creates isolated Git worktrees — one per role — so agents can work in
-parallel without file conflicts.
-
-### Step 3: Seed the Blackboard
-
-Before launching agents, post key project context to the blackboard:
-
-```
-hivemesh_blackboard_post:
-  topic: "architecture"
-  key: "tech_stack"
-  value: "Next.js frontend, NestJS backend, TypeORM with PostgreSQL"
-  agentId: "orchestrator"
+### Step 2: Create Swarm
+Call `hivemesh_create_swarm` with the project path and your dynamic role names:
+```json
+{
+  "projectPath": "D:/my-project",
+  "roles": ["theme-tokens", "shell-layout", "data-views", "a11y-auditor"]
+}
 ```
 
-Post insights about: tech stack, coding conventions, file structure, auth
-patterns, testing frameworks, and any project-specific gotchas.
+### Step 3: Seed Blackboard
+Post architectural conventions and tech stack info into SQLite Blackboard so agents inherit context instantly without burning tokens re-reading files.
 
-### Step 4: Launch Agents
+### Step 4: Launch Dynamic Builders
+Use `invoke_subagent` to launch `hive-builder` for each domain slice and `hive-adversary` for edge-case/security probing.
 
-Use `invoke_subagent` to launch agents for each role. Give each agent:
-- Its role name and task description
-- The worktree path from the swarm (so it works in isolation)
-- Instructions to read the blackboard first
+### Step 5: Monitor & Coordinate
+- `hivemesh_canvas_view`: Render live SVG mission control topology.
+- `hivemesh_check_ast_changes`: Catch breaking signature changes early.
+- `hivemesh_self_play_round`: Test code resilience with adversarial fuzzing.
 
-Example launch pattern:
-- 2–3 `hive-builder` agents for feature implementation
-- 1 `hive-adversary` agent for security/edge-case testing
-- Optionally 1 `hive-critic` agent for integration review
-
-### Step 5: Monitor and Coordinate
-
-While agents work:
-- Use `hivemesh_dashboard` to generate a live status view
-- Use `hivemesh_check_ast_changes` to detect conflicts early
-- Use `hivemesh_blackboard_query` to see what agents have discovered
-- Facilitate contract negotiations when agents need to agree on interfaces
-
-### Step 6: Merge and Deliver
-
-When agents complete:
-1. Run final `hivemesh_check_ast_changes` — resolve any conflicts
-2. Merge branches in dependency order (database → backend → frontend)
-3. Run full test suite
-4. Clean up with `hivemesh_destroy_swarm`
-5. Present results to the user
-
-## Available MCP Tools
-
-| Tool | Purpose |
-|:-----|:--------|
-| `hivemesh_create_swarm` | Create worktrees for parallel agents |
-| `hivemesh_swarm_status` | Check swarm and agent status |
-| `hivemesh_destroy_swarm` | Clean up worktrees and branches |
-| `hivemesh_blackboard_post` | Share knowledge between agents |
-| `hivemesh_blackboard_query` | Read shared knowledge |
-| `hivemesh_blackboard_list_topics` | List all knowledge topics |
-| `hivemesh_propose_contract` | Propose an API/schema contract |
-| `hivemesh_respond_contract` | Accept or reject a contract |
-| `hivemesh_check_ast_changes` | Detect semantic code conflicts |
-| `hivemesh_dashboard` | Generate live mission control view |
-
-## Tips
-
-- **Fewer agents is often better.** 3 focused agents beat 6 scattered ones.
-- **Seed the blackboard generously.** The more context you share upfront, the
-  less time agents waste re-reading the codebase.
-- **Check AST changes early.** Don't wait until merge time to find conflicts.
-- **Use contracts for cross-cutting concerns.** If backend and frontend need to
-  agree on an API shape, make them negotiate a contract first.
+### Step 6: Merge & Deliver
+Verify AST compatibility, merge branches in dependency order, run tests, and present the final deliverable.

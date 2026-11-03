@@ -1,12 +1,52 @@
 /**
  * HiveMesh Worktree Manager — Creates and manages isolated Git worktrees
  * for each agent in a swarm, ensuring zero file-level conflicts.
+ * Supports cross-process persistence via .hivemesh/swarms.json.
  */
 import { execSync } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 const swarms = new Map();
+function getStoragePath(projectPath) {
+    const dir = path.join(projectPath, ".hivemesh");
+    if (!fs.existsSync(dir)) {
+        try {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        catch {
+            // Ignore
+        }
+    }
+    return path.join(dir, "swarms.json");
+}
+function loadPersistedSwarms(projectPath) {
+    if (!projectPath || !fs.existsSync(projectPath))
+        return;
+    const file = getStoragePath(projectPath);
+    if (fs.existsSync(file)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(file, "utf-8"));
+            for (const s of data) {
+                swarms.set(s.id, s);
+            }
+        }
+        catch {
+            // Ignore
+        }
+    }
+}
+function savePersistedSwarms(projectPath) {
+    try {
+        const file = getStoragePath(projectPath);
+        const list = Array.from(swarms.values()).filter((s) => s.projectPath === projectPath);
+        fs.writeFileSync(file, JSON.stringify(list, null, 2), "utf-8");
+    }
+    catch {
+        // Ignore
+    }
+}
 export function createSwarm(projectPath, roles, baseBranch = "main") {
+    loadPersistedSwarms(projectPath);
     const id = `swarm_${Date.now().toString(36)}`;
     const worktrees = [];
     // Ensure we're in a git repo
@@ -46,7 +86,6 @@ export function createSwarm(projectPath, roles, baseBranch = "main") {
             });
         }
         catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
             worktrees.push({
                 path: worktreePath,
                 branch: branchName,
@@ -57,9 +96,13 @@ export function createSwarm(projectPath, roles, baseBranch = "main") {
     }
     const swarm = { id, projectPath, worktrees, createdAt: Date.now() };
     swarms.set(id, swarm);
+    savePersistedSwarms(projectPath);
     return swarm;
 }
-export function getSwarmStatus(swarmId) {
+export function getSwarmStatus(swarmId, projectPath) {
+    if (projectPath) {
+        loadPersistedSwarms(projectPath);
+    }
     if (swarmId) {
         const swarm = swarms.get(swarmId);
         return swarm ? [swarm] : [];
@@ -74,9 +117,13 @@ export function updateWorktreeStatus(swarmId, role, status) {
     if (!wt)
         return false;
     wt.status = status;
+    savePersistedSwarms(swarm.projectPath);
     return true;
 }
-export function destroySwarm(swarmId) {
+export function destroySwarm(swarmId, projectPath) {
+    if (projectPath) {
+        loadPersistedSwarms(projectPath);
+    }
     const swarm = swarms.get(swarmId);
     if (!swarm) {
         return { success: false, message: `Swarm ${swarmId} not found` };
@@ -114,7 +161,9 @@ export function destroySwarm(swarmId) {
             // Branch might not exist
         }
     }
+    const proj = swarm.projectPath;
     swarms.delete(swarmId);
+    savePersistedSwarms(proj);
     if (errors.length > 0) {
         return {
             success: false,
