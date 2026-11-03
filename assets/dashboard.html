@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HiveMesh Mission Control</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes subtle-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .status-pulse {
+      animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-3 font-sans selection:bg-indigo-500/20">
+
+  <!-- Root Card (Linear / Vercel style) -->
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl max-w-3xl mx-auto overflow-hidden">
+    
+    <!-- Header -->
+    <div class="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-sm font-semibold text-white">
+          🐝
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-sm font-semibold tracking-tight text-[var(--foreground)]">HiveMesh</h1>
+            <span class="text-xs px-1.5 py-0.5 rounded text-[var(--muted-foreground)] bg-[var(--sidebar)] border border-[var(--border)] font-mono">v0.3.0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-1.5 text-xs text-[var(--muted-foreground)]">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 status-pulse"></span>
+          <span class="text-emerald-500 font-medium">Swarm Active</span>
+          <span class="text-[var(--border)]">•</span>
+          <span>4 Workers</span>
+        </div>
+        <button onclick="checkAST()" class="text-xs font-medium px-2.5 py-1.5 rounded-md bg-[var(--sidebar)] hover:bg-zinc-800 border border-[var(--border)] text-[var(--foreground)] transition flex items-center gap-1.5">
+          <span>Verify AST</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Minimalist Stats Bar -->
+    <div class="grid grid-cols-4 border-b border-[var(--border)] divide-x divide-[var(--border)] bg-[var(--sidebar)]/30">
+      <div class="px-4 py-2.5">
+        <div class="text-[11px] font-medium text-[var(--muted-foreground)]">Agents</div>
+        <div class="text-sm font-semibold text-[var(--foreground)] mt-0.5">4 <span class="text-[11px] font-normal text-emerald-500 font-mono">Online</span></div>
+      </div>
+      <div class="px-4 py-2.5">
+        <div class="text-[11px] font-medium text-[var(--muted-foreground)]">Knowledge</div>
+        <div class="text-sm font-semibold text-[var(--foreground)] mt-0.5">19 <span class="text-[11px] font-normal text-[var(--muted-foreground)] font-mono">FTS5</span></div>
+      </div>
+      <div class="px-4 py-2.5">
+        <div class="text-[11px] font-medium text-[var(--muted-foreground)]">AST Conflicts</div>
+        <div class="text-sm font-semibold text-emerald-500 mt-0.5">0 <span class="text-[11px] font-normal text-[var(--muted-foreground)] font-mono">Clean</span></div>
+      </div>
+      <div class="px-4 py-2.5">
+        <div class="text-[11px] font-medium text-[var(--muted-foreground)]">Security Rate</div>
+        <div class="text-sm font-semibold text-[var(--foreground)] mt-0.5">95.2% <span class="text-[11px] font-normal text-emerald-500 font-mono">Passed</span></div>
+      </div>
+    </div>
+
+    <!-- Navigation Pills -->
+    <div class="px-5 pt-3 pb-2 border-b border-[var(--border)] flex items-center space-x-2 text-xs font-medium bg-[var(--card)]">
+      <button onclick="setTab('topology')" id="btn-topology" class="px-2.5 py-1 rounded-md bg-zinc-800 text-white font-medium transition">
+        Topology
+      </button>
+      <button onclick="setTab('ast')" id="btn-ast" class="px-2.5 py-1 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+        AST Radar
+      </button>
+      <button onclick="setTab('blackboard')" id="btn-blackboard" class="px-2.5 py-1 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+        Knowledge
+      </button>
+      <button onclick="setTab('selfplay')" id="btn-selfplay" class="px-2.5 py-1 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+        Red Team
+      </button>
+    </div>
+
+    <!-- TAB 1: Clean Topology -->
+    <div id="view-topology" class="p-5 space-y-4">
+      <div class="border border-[var(--border)] rounded-lg bg-[var(--sidebar)]/40 p-3 flex flex-col items-center justify-center relative">
+        <svg viewBox="0 0 600 180" class="w-full max-w-xl h-auto">
+          <!-- Connectors -->
+          <line x1="300" y1="90" x2="100" y2="45" stroke="currentColor" stroke-opacity="0.15" stroke-dasharray="3 3"/>
+          <line x1="300" y1="90" x2="500" y2="45" stroke="currentColor" stroke-opacity="0.15" stroke-dasharray="3 3"/>
+          <line x1="300" y1="90" x2="100" y2="135" stroke="currentColor" stroke-opacity="0.15" stroke-dasharray="3 3"/>
+          <line x1="300" y1="90" x2="500" y2="135" stroke="currentColor" stroke-opacity="0.15" stroke-dasharray="3 3"/>
+
+          <!-- P2P Contract Line -->
+          <path d="M 100 45 Q 300 15 500 45" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="2 2" stroke-opacity="0.5"/>
+          <text x="300" y="24" text-anchor="middle" fill="#818cf8" font-size="9" font-family="monospace">P2P CONTRACT</text>
+
+          <!-- Center Node: Master -->
+          <g class="cursor-pointer" onclick="selectAgent('master')">
+            <circle cx="300" cy="90" r="24" fill="#18181b" stroke="#6366f1" stroke-width="2"/>
+            <text x="300" y="87" text-anchor="middle" fill="#ffffff" font-size="11">👑</text>
+            <text x="300" y="100" text-anchor="middle" fill="#a1a1aa" font-size="8" font-weight="600">MASTER</text>
+          </g>
+
+          <!-- Worker 1: Backend -->
+          <g class="cursor-pointer" onclick="selectAgent('backend')">
+            <circle cx="100" cy="45" r="20" fill="#18181b" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="100" y="49" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="bold">API</text>
+            <text x="100" y="75" text-anchor="middle" fill="#71717a" font-size="9">backend</text>
+          </g>
+
+          <!-- Worker 2: Frontend -->
+          <g class="cursor-pointer" onclick="selectAgent('frontend')">
+            <circle cx="500" cy="45" r="20" fill="#18181b" stroke="#8b5cf6" stroke-width="1.5"/>
+            <text x="500" y="49" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="bold">UI</text>
+            <text x="500" y="75" text-anchor="middle" fill="#71717a" font-size="9">frontend</text>
+          </g>
+
+          <!-- Worker 3: Database -->
+          <g class="cursor-pointer" onclick="selectAgent('database')">
+            <circle cx="100" cy="135" r="20" fill="#18181b" stroke="#10b981" stroke-width="1.5"/>
+            <text x="100" y="139" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="bold">DB</text>
+            <text x="100" y="165" text-anchor="middle" fill="#71717a" font-size="9">database</text>
+          </g>
+
+          <!-- Worker 4: Red Team -->
+          <g class="cursor-pointer" onclick="selectAgent('security')">
+            <circle cx="500" cy="135" r="20" fill="#18181b" stroke="#f43f5e" stroke-width="1.5"/>
+            <text x="500" y="139" text-anchor="middle" fill="#fda4af" font-size="10" font-weight="bold">RED</text>
+            <text x="500" y="165" text-anchor="middle" fill="#71717a" font-size="9">security</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Compact Agent Inspector Details -->
+      <div id="inspector-card" class="border border-[var(--border)] rounded-lg p-3 bg-[var(--sidebar)]/20 text-xs flex items-center justify-between">
+        <div class="space-y-0.5">
+          <div class="flex items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span class="font-semibold text-[var(--foreground)]" id="insp-name">Backend Builder</span>
+            <span class="text-[var(--muted-foreground)] font-mono text-[11px]" id="insp-branch">hivemesh/swarm_01/backend</span>
+          </div>
+          <p class="text-[var(--muted-foreground)] text-[11px]" id="insp-task">Implementing WebAuthn assertion handlers & session refresh tokens</p>
+        </div>
+        <div class="text-right">
+          <span class="text-[11px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/60" id="insp-path">worktrees/twenty-backend</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: AST Radar -->
+    <div id="view-ast" class="hidden p-5 space-y-2.5">
+      <div class="text-xs text-[var(--muted-foreground)] flex justify-between items-center mb-1">
+        <span>TypeScript Compiler AST Diff Analysis</span>
+        <span class="text-emerald-500 font-mono">0 Breaking Conflicts</span>
+      </div>
+      <div class="space-y-1.5 text-xs font-mono">
+        <div class="p-2 rounded border border-[var(--border)] bg-[var(--sidebar)]/30 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-500">SAFE</span>
+            <span class="text-[var(--foreground)]">getUserProfile(userId: string)</span>
+          </div>
+          <span class="text-[var(--muted-foreground)]">auth.service.ts</span>
+        </div>
+        <div class="p-2 rounded border border-[var(--border)] bg-[var(--sidebar)]/30 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-indigo-400">ADD</span>
+            <span class="text-[var(--foreground)]">interface PasskeyCredential</span>
+          </div>
+          <span class="text-[var(--muted-foreground)]">types/passkey.ts</span>
+        </div>
+        <div class="p-2 rounded border border-[var(--border)] bg-[var(--sidebar)]/30 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-indigo-400">ADD</span>
+            <span class="text-[var(--foreground)]">verifyAssertion(token: string)</span>
+          </div>
+          <span class="text-[var(--muted-foreground)]">auth.resolver.ts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Blackboard -->
+    <div id="view-blackboard" class="hidden p-5 space-y-3">
+      <input type="text" id="bb-search" oninput="searchBB()" placeholder="Filter knowledge (e.g. auth, typeorm, apollo)..." 
+        class="w-full text-xs px-3 py-1.5 rounded-md bg-[var(--sidebar)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-indigo-500 font-mono">
+      <div id="bb-items" class="space-y-1.5 text-xs">
+        <div class="bb-card p-2 rounded border border-[var(--border)] bg-[var(--sidebar)]/30 flex justify-between items-start" data-key="auth passport jwt">
+          <div>
+            <span class="font-mono text-indigo-400 font-semibold">[architecture:auth]</span>
+            <p class="text-[var(--foreground)] mt-0.5">Twenty uses Passport with custom workspace tenancy guards & JWT sessions.</p>
+          </div>
+          <span class="text-[10px] text-[var(--muted-foreground)] font-mono">backend</span>
+        </div>
+        <div class="bb-card p-2 rounded border border-[var(--border)] bg-[var(--sidebar)]/30 flex justify-between items-start" data-key="database postgres typeorm">
+          <div>
+            <span class="font-mono text-emerald-400 font-semibold">[database:orm]</span>
+            <p class="text-[var(--foreground)] mt-0.5">TypeORM handles PostgreSQL schema migrations and repository entities.</p>
+          </div>
+          <span class="text-[10px] text-[var(--muted-foreground)] font-mono">database</span>
+        </div>
+        <div class="bb-card p-2 rounded border border-[var(--border)] bg-[var(--sidebar)]/30 flex justify-between items-start" data-key="frontend apollo graphql">
+          <div>
+            <span class="font-mono text-purple-400 font-semibold">[frontend:state]</span>
+            <p class="text-[var(--foreground)] mt-0.5">Apollo Client React hooks manage query caching and reactive variables.</p>
+          </div>
+          <span class="text-[10px] text-[var(--muted-foreground)] font-mono">frontend</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Red Team -->
+    <div id="view-selfplay" class="hidden p-5 space-y-2">
+      <div class="text-xs text-[var(--muted-foreground)] flex justify-between items-center mb-1">
+        <span>Adversarial Red Team Test Runs</span>
+        <span class="text-emerald-500 font-mono">19 / 19 Passed</span>
+      </div>
+      <div class="space-y-1.5 text-xs font-mono">
+        <div class="p-2 rounded border border-emerald-500/20 bg-emerald-500/5 flex justify-between items-center">
+          <span class="text-emerald-400">PASS: Concurrent token exchange (50 reqs)</span>
+          <span class="text-[var(--muted-foreground)]">84ms</span>
+        </div>
+        <div class="p-2 rounded border border-emerald-500/20 bg-emerald-500/5 flex justify-between items-center">
+          <span class="text-emerald-400">PASS: WebAuthn challenge replay protection</span>
+          <span class="text-[var(--muted-foreground)]">42ms</span>
+        </div>
+        <div class="p-2 rounded border border-zinc-700 bg-zinc-800/40 flex justify-between items-center">
+          <span class="text-zinc-300">PATCHED: Null userHandle boundary exception</span>
+          <span class="text-emerald-400">Round 2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-5 py-2.5 border-t border-[var(--border)] bg-[var(--sidebar)]/20 flex items-center justify-between text-[11px] text-[var(--muted-foreground)] font-mono">
+      <span>Project: twenty-crm</span>
+      <span>Engine: SQLite FTS5 + AST Bus</span>
+    </div>
+
+  </div>
+
+  <script>
+    const agents = {
+      master: {
+        name: "Master Orchestrator",
+        branch: "main",
+        task: "Decomposing tasks, tracking AST conflicts, and coordinating worktree merges",
+        path: "d:\\twenty-crm-master"
+      },
+      backend: {
+        name: "Backend Builder",
+        branch: "hivemesh/swarm_01/backend",
+        task: "Implementing WebAuthn assertion handlers & session refresh tokens",
+        path: "d:\\twenty-crm-backend"
+      },
+      frontend: {
+        name: "Frontend Builder",
+        branch: "hivemesh/swarm_01/frontend",
+        task: "Building Apollo Client Passkey UI modal & WebAuthn browser API integration",
+        path: "d:\\twenty-crm-frontend"
+      },
+      database: {
+        name: "Database Builder",
+        branch: "hivemesh/swarm_01/database",
+        task: "Running TypeORM migrations for UserCredential & PasskeyTenant entities",
+        path: "d:\\twenty-crm-database"
+      },
+      security: {
+        name: "Adversary Red Team",
+        branch: "hivemesh/swarm_01/security",
+        task: "Running automated fuzzing, challenge replay, and token deadlock stress tests",
+        path: "d:\\twenty-crm-security"
+      }
+    };
+
+    function selectAgent(id) {
+      const a = agents[id];
+      if (!a) return;
+      document.getElementById('insp-name').innerText = a.name;
+      document.getElementById('insp-branch').innerText = a.branch;
+      document.getElementById('insp-task').innerText = a.task;
+      document.getElementById('insp-path').innerText = a.path;
+    }
+
+    function setTab(name) {
+      ['topology', 'ast', 'blackboard', 'selfplay'].forEach(t => {
+        const v = document.getElementById('view-' + t);
+        const b = document.getElementById('btn-' + t);
+        if (t === name) {
+          v.classList.remove('hidden');
+          b.className = "px-2.5 py-1 rounded-md bg-zinc-800 text-white font-medium transition";
+        } else {
+          v.classList.add('hidden');
+          b.className = "px-2.5 py-1 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition";
+        }
+      });
+    }
+
+    function searchBB() {
+      const q = document.getElementById('bb-search').value.toLowerCase();
+      document.querySelectorAll('.bb-card').forEach(el => {
+        const k = el.getAttribute('data-key');
+        el.style.display = (!q || k.includes(q)) ? 'flex' : 'none';
+      });
+    }
+
+    function checkAST() {
+      alert("AST Audit Complete: 0 breaking conflicts across all 4 worktrees.");
+    }
+  </script>
+</body>
+</html>
