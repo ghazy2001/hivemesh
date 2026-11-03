@@ -1,5 +1,5 @@
-import { Blackboard } from "./dist/blackboard.js";
-import { parseSourceFileSignatures, detectSemanticConflicts } from "./dist/ast-watcher.js";
+import { Blackboard } from "../dist/blackboard.js";
+import { parseSourceFileSignatures, detectSemanticConflicts } from "../dist/ast-watcher.js";
 
 console.log("=== 1. TESTING BLACKBOARD FTS5 ===");
 const bb = new Blackboard();

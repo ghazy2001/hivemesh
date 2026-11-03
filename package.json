@@ -1,7 +1,11 @@
 {
   "name": "hivemesh",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Multi-Agent Swarm Engine for Antigravity & Claude Code",
+  "bin": {
+    "hivemesh": "./bin/hivemesh.js"
+  },
+  "type": "module",
   "scripts": {
     "build": "npm run build --prefix engine",
     "test": "npm test --prefix engine",

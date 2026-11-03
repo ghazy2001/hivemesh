@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * HiveMesh MCP Server — v0.2.0
+ * HiveMesh MCP Server — v0.3.0
  * The central coordination engine exposing tools for:
  * - Parallel Git worktree management
  * - SQLite FTS5 Blackboard memory
  * - TypeScript AST semantic conflict detection
+ * - Automated Adversarial Self-Play Red-Team Loops
  * - P2P agent contract negotiations
- * - Live mission control dashboard
+ * - Generative UI Interactive Canvas & Mission Control
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -26,11 +27,13 @@ import {
 import { checkASTChanges, detectSemanticConflicts } from "./ast-watcher.js";
 import { mesh } from "./p2p-mesh.js";
 import { generateDashboard } from "./dashboard.js";
+import { selfPlay } from "./self-play.js";
+import { generateCanvasHtml } from "./canvas.js";
 
 const blackboard = new Blackboard();
 
 const server = new Server(
-  { name: "hivemesh", version: "0.2.0" },
+  { name: "hivemesh", version: "0.3.0" },
   { capabilities: { tools: {} } }
 );
 
@@ -190,6 +193,51 @@ const TOOLS = [
         swarmId: { type: "string", description: "The swarm ID to check" },
       },
       required: ["swarmId"],
+    },
+  },
+  {
+    name: "hivemesh_self_play_round",
+    description:
+      "Execute an automated adversarial Red-Team round: runs attack tests against a builder agent's worktree to probe for race conditions, vulnerabilities, or edge-case failures, and returns remediation guidance.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        worktreePath: {
+          type: "string",
+          description: "Absolute path to the target builder's worktree",
+        },
+        targetRole: {
+          type: "string",
+          description: "Role of the builder being tested (e.g., 'backend')",
+        },
+        adversaryRole: {
+          type: "string",
+          description: "Role of the testing adversary (e.g., 'security')",
+        },
+        testCommand: {
+          type: "string",
+          description: "Shell command to run the attack test (e.g., 'npm test -- auth.attack.spec.ts')",
+        },
+        testFilePath: {
+          type: "string",
+          description: "Optional relative path of the attack test file",
+        },
+      },
+      required: ["worktreePath", "targetRole", "adversaryRole", "testCommand"],
+    },
+  },
+  {
+    name: "hivemesh_canvas_view",
+    description:
+      "Generate an interactive HTML/SVG Generative UI canvas visualizing the live swarm topology, active worker nodes, AST conflicts, and security metrics.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        swarmId: {
+          type: "string",
+          description: "Optional swarm ID to visualize",
+        },
+      },
     },
   },
   {
@@ -353,6 +401,68 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               ),
             },
           ],
+        };
+      }
+
+      case "hivemesh_self_play_round": {
+        const result = selfPlay.runRound(
+          args.worktreePath as string,
+          args.targetRole as string,
+          args.adversaryRole as string,
+          args.testCommand as string,
+          args.testFilePath as string | undefined
+        );
+
+        // Auto-post findings to Blackboard for visibility
+        if (result.status === "VULNERABLE") {
+          blackboard.post(
+            "vulnerabilities",
+            `${result.targetRole}_exploit`,
+            `Adversary '${result.adversaryRole}' breached '${result.targetRole}' in ${result.testFile}: ${result.remediationAdvice}`,
+            args.adversaryRole as string
+          );
+        }
+
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+        };
+      }
+
+      case "hivemesh_canvas_view": {
+        const swarms = getSwarmStatus(args.swarmId as string | undefined);
+        const contracts = mesh.getContracts();
+        const blackboardStats = blackboard.getStats();
+        const selfPlayStats = selfPlay.getStats();
+
+        const astReports = swarms.flatMap((s) =>
+          s.worktrees
+            .filter((wt) => wt.status === "active")
+            .map((wt) => {
+              try {
+                return checkASTChanges(s.projectPath, wt.path, wt.role);
+              } catch {
+                return {
+                  worktreePath: wt.path,
+                  role: wt.role,
+                  changes: [],
+                  referencedSymbols: [],
+                  timestamp: Date.now(),
+                };
+              }
+            })
+        );
+
+        const semanticConflicts = detectSemanticConflicts(astReports);
+        const html = generateCanvasHtml({
+          swarms,
+          semanticConflicts,
+          contracts,
+          selfPlayStats,
+          blackboardStats,
+        });
+
+        return {
+          content: [{ type: "text" as const, text: html }],
         };
       }
 

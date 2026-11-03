@@ -2,7 +2,7 @@
   "name": "hivemesh",
   "displayName": "HiveMesh — Multi-Agent Swarm Engine",
   "description": "Orchestrate parallel AI agents with shared memory, AST-aware conflict detection, peer-to-peer contract negotiation, adversarial testing, and a live mission control dashboard.",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "author": {
     "name": "Mahmoud Ghazy",
     "url": "https://github.com/ghazy2001"
