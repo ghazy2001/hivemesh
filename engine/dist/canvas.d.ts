@@ -1,7 +1,7 @@
 /**
  * HiveMesh Generative UI Canvas Generator
- * Produces interactive HTML/SVG visualizations of the agent swarm topology,
- * real-time semantic conflicts, contracts, and self-play security radar.
+ * Produces clean, professional, Linear-inspired HTML/SVG visualizations
+ * of the agent swarm topology, real-time semantic conflicts, contracts, and security radar.
  */
 import type { SwarmInfo } from "./worktree-manager.js";
 import type { SemanticConflict } from "./ast-watcher.js";
