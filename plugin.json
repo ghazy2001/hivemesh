@@ -1,0 +1,19 @@
+{
+  "name": "hivemesh",
+  "displayName": "HiveMesh — Multi-Agent Swarm Engine",
+  "description": "Orchestrate parallel AI agents with shared memory, AST-aware conflict detection, peer-to-peer contract negotiation, adversarial testing, and a live mission control dashboard.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Mahmoud Ghazy",
+    "url": "https://github.com/ghazy2001"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ghazy2001/hivemesh"
+  },
+  "suggestedPrompts": [
+    "Create a swarm of agents to implement a new feature with backend, frontend, and security testing in parallel",
+    "Show me the HiveMesh mission control dashboard with live swarm status",
+    "Start an adversarial red-team test against the current codebase changes"
+  ]
+}

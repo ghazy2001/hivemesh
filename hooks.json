@@ -1,0 +1,11 @@
+{
+  "hivemesh-welcome": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node -e \"console.log(JSON.stringify({injectSteps:[{systemMessage:{systemMessage:'HiveMesh Swarm Engine is loaded. The hivemesh skill is available for orchestrating parallel agent swarms with shared memory, AST conflict detection, P2P contracts, and adversarial testing.',metadata:{user_markdown:'🐝 **HiveMesh Swarm Engine** is active and ready to orchestrate parallel agent swarms.'}}}]}))\"",
+        "timeout": 5
+      }
+    ]
+  }
+}

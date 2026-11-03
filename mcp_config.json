@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hivemesh": {
+      "command": "node",
+      "type": "stdio",
+      "args": [
+        "engine/dist/server.js"
+      ]
+    }
+  }
+}

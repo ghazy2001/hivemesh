@@ -1,0 +1,27 @@
+{
+  "name": "hivemesh",
+  "version": "0.1.0",
+  "description": "Multi-Agent Swarm Engine for Antigravity & Claude Code",
+  "scripts": {
+    "build": "npm run build --prefix engine",
+    "clean": "rimraf engine/dist",
+    "postinstall": "npm install --prefix engine"
+  },
+  "keywords": [
+    "antigravity",
+    "ai-agents",
+    "multi-agent",
+    "swarm-intelligence",
+    "mcp",
+    "claude-code",
+    "blackboard-architecture",
+    "ast-analysis",
+    "git-worktrees"
+  ],
+  "author": "Mahmoud Ghazy (https://github.com/ghazy2001)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ghazy2001/hivemesh.git"
+  },
+  "license": "MIT"
+}
