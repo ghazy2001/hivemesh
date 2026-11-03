@@ -1,17 +1,32 @@
-# 🐝 HiveMesh — Multi-Agent Swarm Engine for Antigravity
+# 🐝 HiveMesh — The Universal Multi-Agent Swarm Engine
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version: 0.3.0](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/ghazy2001/hivemesh)
-[![Node: >=20](https://img.shields.io/badge/node-%3E%3D20-green.svg)](https://nodejs.org/)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Standard%202025-purple.svg)](https://modelcontextprotocol.io/)
+[![Platform: Claude Code | Cursor | Antigravity | CLI](https://img.shields.io/badge/platforms-Claude%20Code%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20CLI-success.svg)](https://github.com/ghazy2001/hivemesh)
 
-**HiveMesh** is an all-in-one multi-agent orchestration engine and plugin for **Google Antigravity** and **Claude Code**. It transforms a single prompt into an autonomous swarm of specialized agents working in parallel Git worktrees with:
+**HiveMesh** is a universal, platform-agnostic multi-agent orchestration engine. It transforms any AI coding agent — **Claude Code**, **Cursor**, **Antigravity**, **Windsurf**, or your terminal — into an autonomous team of parallel agents working in isolated Git worktrees with:
 
-1. 📋 **SQLite FTS5 Blackboard**: Native full-text search with BM25 ranking for instant zero-token architectural discovery reuse.
+1. 📋 **SQLite FTS5 Blackboard**: Native in-memory full-text search with BM25 ranking for instant zero-token architectural discovery reuse.
 2. 🔬 **Deep TypeScript AST Conflict Engine**: Real-time detection of function and interface signature changes across branches to prevent semantic build breaks.
 3. 🤝 **P2P Contract Negotiation**: Inter-agent interface handshakes before coding begins.
 4. 💀 **Adversarial Self-Play**: Automated Red-Team vs Blue-Team fuzzing and probing loop for edge cases, race conditions, and vulnerabilities.
-5. 📊 **Generative UI Canvas**: Live visual mission control topology rendered directly in the conversation.
-6. 💻 **Standalone CLI**: Launch swarms directly from the terminal with `npx hivemesh run`.
+5. 📊 **Mission Control Canvas**: Live visual mission control topology rendered directly in your agent environment.
+6. 💻 **Universal CLI**: Launch swarms directly from any terminal with `npx hivemesh run`.
+
+---
+
+## 🌐 Universal Compatibility
+
+Because HiveMesh is built on the open **Model Context Protocol (MCP)**, it works seamlessly across the entire AI engineering ecosystem:
+
+| Platform | Integration Method | Supported |
+|:---------|:-------------------|:---------:|
+| **Claude Code** | Native MCP (`claude mcp add hivemesh ...`) | ✅ Full |
+| **Cursor IDE** | Settings → Features → MCP Servers | ✅ Full |
+| **Google Antigravity** | Plugin Bundle (`~/.gemini/config/plugins/hivemesh`) | ✅ Full |
+| **Windsurf / Codeium** | Cascade MCP Config (`mcp_config.json`) | ✅ Full |
+| **Terminal / CI/CD** | Standalone CLI (`npx hivemesh run`) | ✅ Full |
 
 ---
 
@@ -19,11 +34,11 @@
 
 ```mermaid
 flowchart TD
-    User["👤 User: /swarm 'Feature X'"] --> Orch["🧠 hive-orchestrator"]
+    User["👤 Developer: 'Build feature X with parallel team'"] --> Orch["🧠 Swarm Orchestrator (Claude / Cursor / Any Agent)"]
     Orch --> |"1. Create Worktrees"| WTM["Git Worktree Manager"]
-    WTM --> B1["🔨 hive-builder (Backend)"]
-    WTM --> B2["🎨 hive-builder (Frontend)"]
-    WTM --> ADV["💀 hive-adversary (Red Team)"]
+    WTM --> B1["🔨 Builder 1 (Backend API)"]
+    WTM --> B2["🎨 Builder 2 (Frontend UI)"]
+    WTM --> ADV["💀 Adversary (Red Team Fuzzer)"]
     
     B1 <--> |"P2P Contracts"| B2
     B1 --> |"Post Insights"| BB["📋 SQLite FTS5 Blackboard"]
@@ -35,8 +50,52 @@ flowchart TD
     ADV --> |"Self-Play Attack Loop"| B1
     ADV --> |"Self-Play Attack Loop"| B2
     
-    B1 & B2 & ADV --> CRIT["🧐 hive-critic"]
+    B1 & B2 & ADV --> CRIT["🧐 Integration Critic"]
     CRIT --> |"Merge & Verify"| PR["✅ Final Verified PR"]
+```
+
+---
+
+## 🚀 Quick Setup by Platform
+
+### 1. In Claude Code (Terminal)
+Add HiveMesh to Claude Code in one command:
+```bash
+claude mcp add hivemesh node /path/to/hivemesh/engine/dist/server.js
+```
+Or in your project's `.claude/config.json`:
+```json
+{
+  "mcpServers": {
+    "hivemesh": {
+      "command": "node",
+      "args": ["/absolute/path/to/hivemesh/engine/dist/server.js"]
+    }
+  }
+}
+```
+
+### 2. In Cursor IDE
+1. Open **Cursor Settings** → **Features** → **MCP**.
+2. Click **+ Add New MCP Server**.
+3. Set Name: `hivemesh`, Type: `stdio`, Command: `node /path/to/hivemesh/engine/dist/server.js`.
+
+### 3. In Google Antigravity
+Copy or link to `~/.gemini/config/plugins/hivemesh/` and restart Antigravity.
+
+### 4. Standalone CLI (Any Terminal)
+```bash
+# Verify environment
+npx hivemesh doctor
+
+# Run parallel swarm
+npx hivemesh run "Implement OAuth passkeys with UI and attack tests" --roles backend,frontend,security
+
+# Check status
+npx hivemesh status
+
+# Clean up
+npx hivemesh clean <swarmId>
 ```
 
 ---
@@ -60,47 +119,12 @@ flowchart TD
 
 ---
 
-## 💻 Standalone CLI Usage
-
-HiveMesh can be run as a standalone CLI in any terminal or CI/CD environment:
-
-```bash
-# Verify your environment
-npx hivemesh doctor
-
-# Launch a parallel swarm
-npx hivemesh run "Add passkeys to authentication" --roles backend,frontend,security
-
-# Check active swarms
-npx hivemesh status
-
-# Clean up worktrees
-npx hivemesh clean <swarmId>
-```
-
----
-
 ## 👥 Specialized Agent Roles
 
 - **`hive-orchestrator`**: Master coordinator, decomposes prompts, creates swarms, coordinates merges.
 - **`hive-builder`**: Feature implementation specialist operating strictly in an isolated worktree.
 - **`hive-adversary`**: Red-team security tester that fuzzes inputs, tests race conditions, and runs adversarial self-play rounds.
 - **`hive-critic`**: Integration reviewer that verifies AST changes, contracts, builds, and test runs before merge.
-
----
-
-## 🚀 Antigravity Plugin Setup
-
-1. Copy or link to `~/.gemini/config/plugins/hivemesh/`.
-2. Build the TypeScript engine:
-   ```bash
-   cd engine && npm install && npm run build
-   ```
-3. Restart Antigravity to reload plugin configurations.
-4. Launch a swarm from chat:
-   ```text
-   Use the hivemesh skill to create a swarm of 3 agents for adding webhooks with backend, frontend, and adversarial testing.
-   ```
 
 ---
 

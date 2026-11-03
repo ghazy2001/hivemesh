@@ -1,7 +1,7 @@
 {
   "name": "hivemesh",
   "version": "0.3.0",
-  "description": "Multi-Agent Swarm Engine for Antigravity & Claude Code",
+  "description": "The Universal Multi-Agent Swarm Engine for Claude Code, Cursor, Antigravity & Terminal CLI",
   "bin": {
     "hivemesh": "./bin/hivemesh.js"
   },

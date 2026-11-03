@@ -1,7 +1,7 @@
 {
   "name": "hivemesh",
-  "displayName": "HiveMesh — Multi-Agent Swarm Engine",
-  "description": "Orchestrate parallel AI agents with shared memory, AST-aware conflict detection, peer-to-peer contract negotiation, adversarial testing, and a live mission control dashboard.",
+  "displayName": "HiveMesh — Universal Multi-Agent Swarm Engine",
+  "description": "Universal parallel multi-agent swarm orchestrator for Claude Code, Cursor, Antigravity, and Terminal CLI with isolated Git worktrees, SQLite FTS5 shared memory, AST conflict detection, and adversarial testing.",
   "version": "0.3.0",
   "author": {
     "name": "Mahmoud Ghazy",
