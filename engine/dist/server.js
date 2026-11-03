@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 /**
- * HiveMesh MCP Server — The central engine that exposes all HiveMesh tools
- * to Antigravity agents via the Model Context Protocol.
+ * HiveMesh MCP Server — v0.2.0
+ * The central coordination engine exposing tools for:
+ * - Parallel Git worktree management
+ * - SQLite FTS5 Blackboard memory
+ * - TypeScript AST semantic conflict detection
+ * - P2P agent contract negotiations
+ * - Live mission control dashboard
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { Blackboard } from "./blackboard.js";
 import { createSwarm, getSwarmStatus, destroySwarm, } from "./worktree-manager.js";
-import { checkASTChanges } from "./ast-watcher.js";
+import { checkASTChanges, detectSemanticConflicts } from "./ast-watcher.js";
 import { mesh } from "./p2p-mesh.js";
 import { generateDashboard } from "./dashboard.js";
 const blackboard = new Blackboard();
-const server = new Server({ name: "hivemesh", version: "0.1.0" }, { capabilities: { tools: {} } });
+const server = new Server({ name: "hivemesh", version: "0.2.0" }, { capabilities: { tools: {} } });
 // ── Tool Definitions ────────────────────────────────────────────────────────
 const TOOLS = [
     {
@@ -64,13 +69,13 @@ const TOOLS = [
     },
     {
         name: "hivemesh_blackboard_post",
-        description: "Post a knowledge insight to the shared blackboard. Other agents can query this to share discoveries and avoid redundant work.",
+        description: "Post a knowledge insight to the shared SQLite blackboard. Stored in relational table and indexed in FTS5 for instant discovery reuse.",
         inputSchema: {
             type: "object",
             properties: {
                 topic: {
                     type: "string",
-                    description: "Topic category (e.g., 'architecture', 'auth', 'database')",
+                    description: "Topic category (e.g., 'architecture', 'auth', 'database', 'conventions')",
                 },
                 key: {
                     type: "string",
@@ -91,18 +96,22 @@ const TOOLS = [
     },
     {
         name: "hivemesh_blackboard_query",
-        description: "Query knowledge from the shared blackboard by topic and/or key.",
+        description: "Query knowledge from the shared blackboard by topic, key, or natural-language semantic full-text search (powered by SQLite FTS5 with BM25 ranking).",
         inputSchema: {
             type: "object",
             properties: {
-                topic: { type: "string", description: "Filter by topic" },
-                key: { type: "string", description: "Filter by key" },
+                topic: { type: "string", description: "Optional topic filter" },
+                key: { type: "string", description: "Optional exact key filter" },
+                search: {
+                    type: "string",
+                    description: "Natural language keyword or phrase to search via FTS5 (e.g., 'how does session authentication work')",
+                },
             },
         },
     },
     {
         name: "hivemesh_blackboard_list_topics",
-        description: "List all topics in the shared blackboard.",
+        description: "List all topics in the shared blackboard with entry counts and system statistics.",
         inputSchema: { type: "object", properties: {} },
     },
     {
@@ -144,7 +153,7 @@ const TOOLS = [
     },
     {
         name: "hivemesh_check_ast_changes",
-        description: "Check for AST-level code changes (signatures, types, interfaces) across worktrees. Detects semantic conflicts Git cannot catch.",
+        description: "Deep TypeScript AST analysis across worktrees: detects exported function/interface/type signature changes and checks if sibling agents reference them (catching semantic conflicts Git merge cannot detect).",
         inputSchema: {
             type: "object",
             properties: {
@@ -155,7 +164,7 @@ const TOOLS = [
     },
     {
         name: "hivemesh_dashboard",
-        description: "Generate a live Mission Control dashboard with swarm status, AST changes, contracts, and shared knowledge.",
+        description: "Generate a live Mission Control dashboard with swarm status, AST changes, semantic conflicts, contracts, and shared knowledge.",
         inputSchema: {
             type: "object",
             properties: {
@@ -200,16 +209,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
             case "hivemesh_blackboard_query": {
-                const result = blackboard.query(args.topic, args.key);
+                const result = blackboard.query(args.topic, args.key, args.search);
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                 };
             }
             case "hivemesh_blackboard_list_topics": {
                 const topics = blackboard.listTopics();
+                const stats = blackboard.getStats();
                 return {
                     content: [
-                        { type: "text", text: JSON.stringify({ topics }, null, 2) },
+                        {
+                            type: "text",
+                            text: JSON.stringify({ topics, stats }, null, 2),
+                        },
                     ],
                 };
             }
@@ -252,23 +265,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const reports = swarms[0].worktrees
                     .filter((wt) => wt.status === "active")
                     .map((wt) => checkASTChanges(swarms[0].projectPath, wt.path, wt.role));
-                // Cross-reference for conflicts
-                const conflicts = [];
-                for (let i = 0; i < reports.length; i++) {
-                    for (let j = i + 1; j < reports.length; j++) {
-                        const aNames = new Set(reports[i].changes.map((c) => `${c.type}:${c.name}`));
-                        for (const c of reports[j].changes) {
-                            if (aNames.has(`${c.type}:${c.name}`)) {
-                                conflicts.push(`⚠️ CONFLICT: ${c.type}:${c.name} modified by both ${reports[i].role} and ${reports[j].role}`);
-                            }
-                        }
-                    }
-                }
+                const semanticConflicts = detectSemanticConflicts(reports);
                 return {
                     content: [
                         {
                             type: "text",
-                            text: JSON.stringify({ reports, conflicts }, null, 2),
+                            text: JSON.stringify({
+                                swarmId: args.swarmId,
+                                totalWorktreesAnalyzed: reports.length,
+                                semanticConflicts,
+                                reports,
+                            }, null, 2),
                         },
                     ],
                 };
@@ -277,6 +284,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const swarms = getSwarmStatus(args.swarmId);
                 const insights = blackboard.query();
                 const contracts = mesh.getContracts();
+                const stats = blackboard.getStats();
                 const astReports = swarms.flatMap((s) => s.worktrees
                     .filter((wt) => wt.status === "active")
                     .map((wt) => {
@@ -288,15 +296,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                             worktreePath: wt.path,
                             role: wt.role,
                             changes: [],
+                            referencedSymbols: [],
                             timestamp: Date.now(),
                         };
                     }
                 }));
+                const semanticConflicts = detectSemanticConflicts(astReports);
                 const markdown = generateDashboard({
                     swarms,
                     insights,
                     contracts,
                     astReports,
+                    semanticConflicts,
+                    stats,
                 });
                 return {
                     content: [{ type: "text", text: markdown }],

@@ -4,6 +4,7 @@
   "description": "Multi-Agent Swarm Engine for Antigravity & Claude Code",
   "scripts": {
     "build": "npm run build --prefix engine",
+    "test": "npm test --prefix engine",
     "clean": "rimraf engine/dist",
     "postinstall": "npm install --prefix engine"
   },
