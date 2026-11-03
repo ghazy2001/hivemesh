@@ -3,29 +3,26 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version: 0.3.0](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/ghazy2001/hivemesh)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Standard%202025-purple.svg)](https://modelcontextprotocol.io/)
+[![Swarm Sizing: Elastic 1 to 10+](https://img.shields.io/badge/Swarm%20Sizing-Elastic%20(1%20to%2010%2B)-indigo.svg)](https://github.com/ghazy2001/hivemesh)
 [![Platform: Claude Code | Cursor | Antigravity | CLI](https://img.shields.io/badge/platforms-Claude%20Code%20%7C%20Cursor%20%7C%20Antigravity%20%7C%20CLI-success.svg)](https://github.com/ghazy2001/hivemesh)
 
-**HiveMesh** is an adaptive, platform-agnostic multi-agent orchestration engine. It transforms any AI coding agent — **Claude Code**, **Cursor**, **Antigravity**, **Windsurf**, or your terminal — into a dynamically-sized swarm of specialized agents working in isolated Git worktrees.
+**HiveMesh** is an elastic, platform-agnostic multi-agent orchestration engine. It transforms any AI coding agent — **Claude Code**, **Cursor**, **Antigravity**, **Windsurf**, or your terminal — into a dynamically sized swarm of parallel agents working in isolated Git worktrees.
 
-Instead of rigid, hardcoded roles (e.g. "one backend, one frontend"), HiveMesh's orchestrator **dynamically evaluates your prompt**, determines the optimal swarm size (from 1 to 5+ agents), and slices the codebase into independent, non-overlapping domain worktrees.
+Instead of fixed limits or rigid roles, HiveMesh's orchestrator **calculates the optimal critical path** to finish your task in the absolute fastest time. Whether the task requires **1 laser-focused agent** to patch a bug in 30 seconds, **3 agents** to build a feature, or **10+ parallel agents** to migrate an entire enterprise monorepo, HiveMesh scales elastically without artificial ceilings.
 
 ---
 
-## 🧠 Adaptive Swarm Sizing & Dynamic Decomposition
+## ⚡ Elastic Critical-Path Optimization
 
-The Orchestrator reads your prompt, estimates the blast radius, and dynamically provisions specialized agents tailored strictly to the task:
+The Orchestrator evaluates the task's dependency graph, blast radius, and parallelizability:
 
-### 💡 Example: *"Add Dark Mode across the entire app"*
-Instead of generic roles, the Orchestrator dynamically spawns 4 targeted domain specialists:
-- 🎨 **`agent-theme-tokens`**: Configures Tailwind design tokens, CSS variables, and color schemes.
-- 🖼️ **`agent-shell-layout`**: Migrates Sidebar, Navbar, Settings dialogs, and Theme Toggle controls.
-- 📊 **`agent-data-views`**: Updates Data Tables, Kanban cards, Charts, and Form inputs.
-- 👁️ **`agent-a11y-auditor`**: Runs automated WCAG contrast tests and visual edge-case checks.
+```
+[Prompt Analysis] ➡️ [Dependency Graph] ➡️ [Critical Path Calculation] ➡️ [Elastic Swarm Sizing (N = 1, 3, 5, 10+)]
+```
 
-### 💡 Example: *"Refactor GraphQL Permissions"*
-- 🔒 **`agent-auth-guards`**: Updates NestJS permission decorators and JWT payload extraction.
-- 📋 **`agent-schema-types`**: Updates GraphQL resolver schemas and return types.
-- 💀 **`agent-adversary`**: Red-team agent attempting unauthorized access and privilege escalation.
+- **Atomic Bug Fix (N = 1)**: Single agent execution when sequential dependencies mean parallel coordination would only add overhead.
+- **Targeted Domain Feature (N = 3–4)**: Parallel worktree slices (e.g. `theme-tokens`, `shell-layout`, `data-views`, `a11y-auditor`).
+- **Large Multi-Module Overhaul (N = 6–10+)**: Massive enterprise migrations across 10 packages or microservices running simultaneously in 10 isolated worktrees.
 
 ---
 
@@ -33,25 +30,26 @@ Instead of generic roles, the Orchestrator dynamically spawns 4 targeted domain 
 
 ```mermaid
 flowchart TD
-    User["👤 Developer Prompt\n(e.g. 'Add Dark Mode to the frontend')"] --> Orch["🧠 HiveMesh Orchestrator\n• Analyzes Complexity & Scope\n• Decides Swarm Size (1–5 Agents)\n• Slices Project into Domain Worktrees"]
+    User["👤 Developer Prompt\n(e.g. 'Migrate monorepo packages' or 'Fix race condition')"] --> Orch["🧠 HiveMesh Orchestrator\n• Analyzes Dependency Graph\n• Calculates Fastest Critical Path\n• Elastically Sizes Swarm: N = 1, 3, 10+ Agents\n• Slices Project into Domain Worktrees"]
     
-    Orch --> |"Provisions Dynamic Worktrees"| WTM["Git Worktree Manager"]
+    Orch --> |"Provisions Elastic Worktrees"| WTM["Git Worktree Manager"]
     
-    WTM --> A1["🔨 Builder: Domain Slice A\n(e.g. theme-tokens)"]
-    WTM --> A2["🔨 Builder: Domain Slice B\n(e.g. layout-shell)"]
-    WTM --> A3["🔨 Builder: Domain Slice C\n(e.g. data-views)"]
-    WTM --> A4["💀 Adversary: Quality & Security\n(e.g. a11y & contrast auditor)"]
+    WTM --> A1["🔨 Builder 1: Slice A"]
+    WTM --> A2["🔨 Builder 2: Slice B"]
+    WTM --> A3["🔨 Builder 3: Slice C"]
+    WTM --> AN["🔨 Builder N: Slice N (Up to 10+ Parallel Agents)"]
+    WTM --> ADV["💀 Adversary: Quality & Security Red Team"]
     
     A1 <--> |"P2P Contracts"| A2
     A1 --> |"Post Discoveries"| BB["📋 SQLite FTS5 Blackboard"]
-    A2 & A3 --> |"Instant FTS5 Search"| BB
+    A2 & A3 & AN --> |"Instant FTS5 Search"| BB
     
     A1 --> |"AST Diff"| AST["🔬 AST Conflict Watcher"]
-    AST --> |"Real-time Conflict Warnings"| A2
+    AST --> |"Real-time Conflict Warnings"| A2 & AN
     
-    A4 --> |"Adversarial Self-Play Loops"| A1 & A2 & A3
+    ADV --> |"Adversarial Self-Play Loops"| A1 & A2 & AN
     
-    A1 & A2 & A3 & A4 --> CRIT["🧐 Integration Critic"]
+    A1 & A2 & AN & ADV --> CRIT["🧐 Integration Critic"]
     CRIT --> |"Merge & Verify"| PR["✅ Final Verified PR"]
 ```
 
@@ -104,7 +102,7 @@ Copy or link to `~/.gemini/config/plugins/hivemesh/` and restart Antigravity.
 npx hivemesh doctor
 
 # Run parallel swarm with dynamic automatic sizing
-npx hivemesh run "Implement dark mode theme across views and navigation"
+npx hivemesh run "Migrate all 8 packages to ESM"
 
 # Or explicitly define custom domain slices
 npx hivemesh run "Dark mode migration" --roles theme-tokens,shell-layout,data-views,a11y-auditor
