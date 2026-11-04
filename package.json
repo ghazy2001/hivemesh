@@ -5,12 +5,28 @@
   "bin": {
     "hivemesh": "./bin/hivemesh.js"
   },
+  "files": [
+    "bin",
+    "engine/dist",
+    "assets",
+    "agents",
+    "rules",
+    "skills",
+    "plugin.json",
+    "hooks.json",
+    "mcp_config.json",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "scripts": {
     "build": "npm run build --prefix engine",
     "test": "npm test --prefix engine",
-    "clean": "rimraf engine/dist",
-    "postinstall": "npm install --prefix engine"
+    "clean": "rimraf engine/dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "typescript": "^5.7.0"
   },
   "keywords": [
     "antigravity",
