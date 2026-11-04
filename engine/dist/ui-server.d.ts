@@ -20,8 +20,10 @@ export interface BrainSubagent {
     role: string;
     type: string;
     prompt: string;
+    mission: string;
     action: string;
     status: string;
+    files: string[];
 }
 export interface BrainState {
     activeId: string;

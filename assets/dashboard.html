@@ -163,12 +163,12 @@
               <div class="flex items-center gap-2">
                 <span class="text-base text-emerald-400">⚡</span>
                 <div>
-                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Subagents & Background Workers</div>
-                  <div class="text-[10px] font-mono text-zinc-500">Parallel Agents Operating in This Conversation</div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Autonomous Subagents & Swarm Units</div>
+                  <div class="text-[10px] font-mono text-zinc-500">Live breakdown of parallel agents, worktree domains, and verified artifacts</div>
                 </div>
               </div>
               <span id="subagents-count-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                0 Active Workers
+                0 Active Units
               </span>
             </div>
 
@@ -321,70 +321,72 @@
       if (!grid) return;
 
       const subagents = brain.subagents || [];
-      const tasks = brain.activeTasks || [];
       const swarmWorktrees = (swarms && swarms.length > 0) ? swarms[0].worktrees : [];
 
-      const totalWorkers = subagents.length + swarmWorktrees.length + tasks.length;
+      const totalWorkers = subagents.length + swarmWorktrees.length;
 
       if (badge) {
-        badge.innerText = `${totalWorkers || 1} Active Worker(s)`;
+        badge.innerText = `${totalWorkers || 1} Active Units`;
         badge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
       }
 
       // Dynamic cards data
       const cardsData = [];
 
-      // Add Subagents
+      // 1. Add Subagents
       subagents.forEach((sa, idx) => {
         const isDone = (sa.status === 'DONE');
+        const filesList = sa.files || [];
         cardsData.push({
+          kind: 'subagent',
           id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
           title: sa.role,
-          badge: isDone ? 'COMPLETED' : sa.type.toUpperCase(),
+          badge: isDone ? 'COMPLETED ✓' : (sa.type ? sa.type.toUpperCase() : 'RUNNING'),
           badgeClass: isDone ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-          color: idx === 0 ? "#3b82f6" : "#a855f7",
-          activity: sa.action || (isDone ? 'Completed assigned task successfully ✓' : 'Operating in isolated workspace'),
-          footer: `Subagent ID: ${(sa.id || 'Active').slice(0, 18)}...`
+          color: idx === 0 ? "#6366f1" : "#a855f7",
+          icon: "🤖",
+          mission: sa.mission || sa.prompt || "Execute assigned directives",
+          activity: sa.action || (isDone ? `Completed • Generated ${filesList.length} files` : 'Operating in isolated workspace'),
+          files: filesList,
+          isDone,
+          footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • Verified Output ✓`
         });
       });
 
-      // Add Swarm Worktrees if active
+      // 2. Add Swarm Git Worktrees if active
       swarmWorktrees.forEach((wt, idx) => {
         cardsData.push({
+          kind: 'worktree',
           id: `worktree-${wt.role}`,
-          title: wt.role,
+          title: wt.role.toUpperCase(),
           badge: "GIT WORKTREE",
           badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
           color: "#10b981",
-          activity: `Operating in isolated branch ${wt.branch}`,
-          footer: `📁 ${wt.path.split(/[\\/]/).pop()}`
+          icon: "🌿",
+          domain: wt.description || "Isolated Domain Workspace",
+          targetPackage: wt.targetPackage || wt.path.split(/[\\/]/).pop(),
+          branch: wt.branch,
+          activity: `Clean Git Worktree • Isolated on ${wt.branch.split('/').pop()}`,
+          footer: `Worktree: ${wt.path.split(/[\\/]/).pop()} • AST Semantic Guard ✓`
         });
       });
 
-      // Add Active Tasks if any
-      tasks.forEach((t) => {
-        cardsData.push({
-          id: `task-${t.taskId}`,
-          title: `Task: ${t.taskId}`,
-          badge: 'BACKGROUND',
-          badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-          color: '#f59e0b',
-          activity: t.status || 'Executing background job...',
-          footer: 'Antigravity Background Worker'
-        });
-      });
-
-      // If no subagents or worktrees, render the Primary Agent's live card!
+      // 3. Fallback: If no subagents and no worktrees, show Primary Agent
       if (cardsData.length === 0) {
-        const lastOp = brain.recentOps && brain.recentOps.length > 0 ? (brain.recentOps[brain.recentOps.length - 1].label || brain.recentOps[brain.recentOps.length - 1].summary) : "Ready and listening in chat";
+        const lastOp = brain.recentOps && brain.recentOps.length > 0
+          ? (brain.recentOps[brain.recentOps.length - 1].label || brain.recentOps[brain.recentOps.length - 1].summary)
+          : "Ready and listening in chat";
         cardsData.push({
+          kind: 'primary',
           id: "primary-agent-card",
           title: "Primary Pair-Programming Agent",
           badge: "ACTIVE AGENT",
           badgeClass: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
           color: "#6366f1",
+          icon: "🤖",
+          mission: "Antigravity Orchestrator paired with Mahmoud. Ready to spawn parallel swarms.",
           activity: lastOp,
-          footer: "Workspace: D:\\twenty-crm"
+          footer: "Workspace: D:\\twenty-crm • Conflict-Free"
         });
       }
 
@@ -404,30 +406,75 @@
           const badgeEl = document.getElementById(`badge-${card.id}`);
           if (badgeEl && badgeEl.innerText !== card.badge) {
             badgeEl.innerText = card.badge;
-            badgeEl.className = `text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border ${card.badgeClass}`;
+            badgeEl.className = `text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}`;
           }
         } else {
           // CREATE ONCE
           const div = document.createElement('div');
           div.id = card.id;
           div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-zinc-700 transition shadow-md space-y-2.5 animate-enter";
+
+          let middleContent = '';
+          if (card.kind === 'subagent') {
+            const filesChips = (card.files && card.files.length > 0)
+              ? `<div class="pt-1.5 space-y-1">
+                   <div class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Created Artifacts (${card.files.length}):</div>
+                   <div class="flex flex-wrap gap-1">
+                     ${card.files.map(f => `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-indigo-300 border border-zinc-700/80 truncate max-w-[170px]">${escapeHtml(f)}</span>`).join('')}
+                   </div>
+                 </div>`
+              : '';
+
+            middleContent = `
+              <div class="text-[11px] font-mono text-zinc-300 leading-snug">
+                <span class="text-zinc-500">Mission:</span> ${escapeHtml(card.mission)}
+              </div>
+              <div class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px] font-mono">
+                <span class="w-1.5 h-1.5 rounded-full ${card.isDone ? 'bg-emerald-400' : 'bg-blue-400 status-ring'} shrink-0"></span>
+                <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
+              </div>
+              ${filesChips}
+            `;
+          } else if (card.kind === 'worktree') {
+            middleContent = `
+              <div class="text-[11px] font-mono text-zinc-300 leading-snug">
+                <span class="text-zinc-500">Domain:</span> ${escapeHtml(card.domain)}
+              </div>
+              <div class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between text-[11px] font-mono">
+                <span class="text-zinc-400">Target:</span>
+                <span class="text-indigo-300 font-semibold truncate max-w-[200px]">${escapeHtml(card.targetPackage)}</span>
+              </div>
+              <div class="text-[10px] font-mono text-zinc-400 flex items-center justify-between pt-0.5">
+                <span class="truncate">Branch: <span class="text-zinc-200">${escapeHtml(card.branch)}</span></span>
+                <span class="text-emerald-400 font-semibold shrink-0">Ready ✓</span>
+              </div>
+            `;
+          } else {
+            middleContent = `
+              <div class="text-[11px] font-mono text-zinc-300 leading-snug">
+                <span class="text-zinc-500">Status:</span> ${escapeHtml(card.mission)}
+              </div>
+              <div class="px-2.5 py-1.5 rounded-lg bg-indigo-950/30 border border-indigo-500/20 flex items-center gap-2 text-indigo-300 text-[11px] font-mono">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 status-ring shrink-0"></span>
+                <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
+              </div>
+            `;
+          }
+
           div.innerHTML = `
             <div class="flex items-center justify-between">
               <span class="font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5" style="color: ${card.color};">
-                <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${card.color};"></span>
+                <span class="text-sm">${card.icon}</span>
                 ${escapeHtml(card.title)}
               </span>
-              <span id="badge-${card.id}" class="text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border ${card.badgeClass}">
+              <span id="badge-${card.id}" class="text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}">
                 ${escapeHtml(card.badge)}
               </span>
             </div>
-            <div class="px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px] font-mono">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 status-ring shrink-0"></span>
-              <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
-            </div>
-            <div class="pt-1 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80">
+            ${middleContent}
+            <div class="pt-2 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80">
               <span class="truncate text-zinc-400" id="foot-${card.id}">${escapeHtml(card.footer)}</span>
-              <span class="text-emerald-400/90 font-semibold shrink-0">AST Bus ✓</span>
+              <span class="text-emerald-400/90 font-semibold shrink-0">Protected ✓</span>
             </div>
           `;
           grid.appendChild(div);

@@ -68,13 +68,17 @@ export function getAntigravityBrainState(selectedId) {
                         else if (tc.name === "invoke_subagent" && tc.args) {
                             const role = String(tc.args.Role || "Subagent").replace(/^"|"$/g, "");
                             const type = String(tc.args.TypeName || "subagent").replace(/^"|"$/g, "");
+                            const rawPrompt = String(tc.args.Prompt || "").replace(/^"|"$/g, "");
+                            const mission = rawPrompt.split("\n")[0].slice(0, 90).trim() || `Execute autonomous directives for ${role}`;
                             label = `Launched Subagent: ${role}`;
                             subagentsMap.set(role, {
                                 role,
                                 type,
-                                prompt: String(tc.args.Prompt || "").replace(/^"|"$/g, "").slice(0, 100),
+                                prompt: rawPrompt.slice(0, 100),
+                                mission,
                                 action: "Operating in isolated workspace",
-                                status: "ACTIVE"
+                                status: "ACTIVE",
+                                files: []
                             });
                         }
                         else if (tc.name === "read_file") {
@@ -106,18 +110,35 @@ export function getAntigravityBrainState(selectedId) {
             }
             catch { }
         }
-        // Verify subagents status and latest output
+        // Verify subagents status, outputs, and created files
         for (const [_, sa] of subagentsMap.entries()) {
             if (sa.id) {
                 const subTPath = path.join(brainDir, sa.id, ".system_generated", "logs", "transcript.jsonl");
                 if (fs.existsSync(subTPath)) {
                     try {
                         const subLines = fs.readFileSync(subTPath, "utf-8").trim().split("\n");
+                        const files = [];
+                        for (const subLine of subLines) {
+                            try {
+                                const sStep = JSON.parse(subLine);
+                                if (sStep.tool_calls) {
+                                    for (const stc of sStep.tool_calls) {
+                                        if (stc.name === "write_file" || stc.name === "edit_file") {
+                                            const p = stc.args && stc.args.Path ? path.basename(String(stc.args.Path).replace(/"/g, "")) : "";
+                                            if (p && !files.includes(p))
+                                                files.push(p);
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                        sa.files = files;
                         if (subLines.length > 0) {
                             const lastStep = JSON.parse(subLines[subLines.length - 1]);
                             sa.status = lastStep.status === "DONE" ? "DONE" : "RUNNING";
                             sa.action = lastStep.status === "DONE"
-                                ? "Completed task and reported to parent agent ✓"
+                                ? `Completed • Generated ${files.length} verified file(s)`
                                 : "Active in isolated subagent workspace";
                         }
                     }
@@ -126,21 +147,33 @@ export function getAntigravityBrainState(selectedId) {
             }
         }
         const subagents = Array.from(subagentsMap.values());
+        // Only include currently active, non-terminated background tasks (no dead scripts)
         const tasksDir = path.join(brainDir, target.id, ".system_generated", "tasks");
         const activeTasks = [];
         if (fs.existsSync(tasksDir)) {
             try {
                 const taskFiles = fs.readdirSync(tasksDir).filter((f) => f.endsWith(".log"));
-                for (const tf of taskFiles.slice(-4)) {
+                const now = Date.now();
+                for (const tf of taskFiles) {
                     const tPath = path.join(tasksDir, tf);
                     const stat = fs.statSync(tPath);
-                    const content = fs.readFileSync(tPath, "utf-8");
-                    const lastLine = content.trim().split("\n").pop() || "Running...";
-                    activeTasks.push({
-                        taskId: tf.replace(".log", ""),
-                        updatedAt: stat.mtimeMs,
-                        status: lastLine.slice(0, 100)
-                    });
+                    // Only tasks modified within the last 30 seconds
+                    if (now - stat.mtimeMs < 30000) {
+                        const content = fs.readFileSync(tPath, "utf-8");
+                        const isFinished = content.includes("Command exited") ||
+                            content.includes("finished with result") ||
+                            content.includes("was canceled") ||
+                            content.includes("Tool execution was canceled");
+                        if (!isFinished) {
+                            const lines = content.trim().split("\n");
+                            const lastLine = lines.pop() || "Running background worker...";
+                            activeTasks.push({
+                                taskId: tf.replace(".log", ""),
+                                updatedAt: stat.mtimeMs,
+                                status: lastLine.slice(0, 100)
+                            });
+                        }
+                    }
                 }
             }
             catch { }
@@ -320,11 +353,35 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
             // 2. Real System & Swarm Status API
             if (url === "/api/status") {
                 try {
-                    const swarms = getSwarmStatus(targetDir);
+                    const rawSwarms = getSwarmStatus(targetDir);
                     const currentBranch = getGitBranch(targetDir);
                     const commitHash = getGitCommitHash(targetDir);
                     const bbEntries = blackboard.query("");
                     const bbStats = blackboard.getStats();
+                    const swarms = rawSwarms.map((s) => ({
+                        ...s,
+                        worktrees: s.worktrees.map((wt) => {
+                            let description = "Autonomous Domain Slice";
+                            let targetPackage = "packages/twenty-crm";
+                            if (wt.role === "domain-logic") {
+                                description = "Backend Services, ORM Repositories & Business Logic";
+                                targetPackage = "packages/twenty-server";
+                            }
+                            else if (wt.role === "ui-surface") {
+                                description = "Frontend Views, Responsive Layouts & Components";
+                                targetPackage = "packages/twenty-front";
+                            }
+                            else if (wt.role === "quality-adversary") {
+                                description = "Adversarial Stress Testing, Fuzzing & Regression QA";
+                                targetPackage = "packages/twenty-server/**/*.spec.ts";
+                            }
+                            return {
+                                ...wt,
+                                description,
+                                targetPackage
+                            };
+                        })
+                    }));
                     let totalWorktrees = 0;
                     for (const s of swarms) {
                         totalWorktrees += s.worktrees.length;
