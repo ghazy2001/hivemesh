@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "hivemesh": {
+      "command": "npx",
+      "args": ["-y", "hivemesh@latest", "run"],
+      "description": "HiveMesh Multi-Agent Swarm MCP Engine (Git Worktrees + SQLite FTS5 Blackboard + AST Conflict Checker)"
+    }
+  }
+}
