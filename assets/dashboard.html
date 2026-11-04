@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HiveMesh Orchestration Flow Canvas</title>
+  <title>HiveMesh Swarm Mission Control</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     :root {
@@ -27,16 +27,6 @@
       animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
-    @keyframes flow-dash {
-      to {
-        stroke-dashoffset: -40;
-      }
-    }
-    .flow-line {
-      stroke-dasharray: 6 6;
-      animation: flow-dash 1.2s linear infinite;
-    }
-
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
@@ -50,90 +40,73 @@
       to { opacity: 1; transform: translateY(0); }
     }
     .animate-enter {
-      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Custom thin scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
     }
   </style>
 </head>
-<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex items-center justify-center font-sans selection:bg-indigo-500/20 p-4 lg:p-8">
+<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex items-center justify-center font-sans selection:bg-indigo-500/20 p-4 lg:p-6">
 
   <!-- =========================================================================
-       PARALLEL EXECUTION FLOW CANVAS (Left-to-Right Topology Pipeline)
-       [ Chat Command ] ════► [ Master Orchestrator ] ════► [ Parallel Agents ]
+       HIVEMESH ORCHESTRATION CANVAS
+       [ Master Orchestrator (Left) ] ───► [ Dynamic Small Agent Cards (Right) ]
        ========================================================================= -->
-  <main class="w-full max-w-[1400px] mx-auto my-auto">
-    
-    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 lg:p-8 relative shadow-2xl min-h-[580px] flex flex-col justify-center">
+  <main class="w-full max-w-[1440px] mx-auto my-auto">
+    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 lg:p-7 relative shadow-2xl min-h-[580px] flex flex-col justify-center">
       
-      <!-- Flow Grid Container -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative">
+      <div class="flex flex-col lg:flex-row gap-6 items-stretch w-full">
         
         <!-- ===================================================================
-             1. LEFT COLUMN: CHAT DIRECTIVE / USER PROMPT BOX (4 Cols)
+             LEFT CARD: MASTER ORCHESTRATOR (Operations & Controller Deck)
              =================================================================== -->
-        <div class="lg:col-span-4 flex flex-col justify-between p-6 rounded-2xl bg-[var(--card-inner)] border border-[var(--border)] shadow-xl relative overflow-hidden transition-all duration-300 hover:border-indigo-500/40" id="chat-directive-card">
-          
-          <div class="space-y-4">
-            <!-- Header Badge -->
-            <div class="flex items-center justify-between border-b border-[var(--border)] pb-3.5">
-              <div class="flex items-center gap-2">
-                <span class="text-base">💬</span>
-                <span class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-400">Chat Directive</span>
-              </div>
-              <span id="directive-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-                <span>Listening...</span>
-              </span>
-            </div>
-
-            <!-- Command Display -->
-            <div class="space-y-2 py-2">
-              <div class="text-[10px] font-mono text-[var(--muted)] uppercase tracking-wider">Incoming Prompt from Chat</div>
-              <div id="directive-prompt-text" class="text-sm font-mono font-medium text-white leading-relaxed p-4 rounded-xl bg-black/40 border border-[var(--border)] min-h-[110px] flex flex-col justify-center">
-                <div class="flex items-center gap-1 text-zinc-400">
-                  <span>Standing by for prompt in chat</span>
-                  <span class="cursor-blink text-indigo-400 font-bold">_</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bottom Footer Details -->
-          <div class="pt-4 border-t border-[var(--border)] mt-4 space-y-2 text-[10px] font-mono text-zinc-500">
-            <div class="flex items-center justify-between">
-              <span>Source Channel:</span>
-              <span class="text-zinc-300 font-semibold">Antigravity Chat</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span>Bus Synchronization:</span>
-              <span class="text-emerald-400 font-semibold">Zero-Latency SSE</span>
-            </div>
-          </div>
-
-          <!-- Animated Indicator Bar on Left Border -->
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-indigo-600"></div>
-        </div>
-
-        <!-- ===================================================================
-             2. CENTER COLUMN: MASTER ORCHESTRATOR ENGINE (4 Cols)
-             =================================================================== -->
-        <div class="lg:col-span-4 flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-b from-indigo-950/30 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300 hover:border-indigo-400/50" id="orchestrator-card">
+        <div class="w-full lg:w-[460px] shrink-0 flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-b from-indigo-950/30 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300" id="orchestrator-main-card">
           
           <div class="space-y-4">
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-indigo-500/20 pb-3.5">
               <div class="flex items-center gap-2">
-                <span class="text-base">👑</span>
-                <span class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-200">Master Orchestrator</span>
+                <span class="text-xl">👑</span>
+                <div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-200">Master Orchestrator</div>
+                  <div class="text-[10px] font-mono text-zinc-500">Autonomous Critical-Path Engine</div>
+                </div>
               </div>
-              <span id="orch-state-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                Ready
+              <span id="orch-state-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 status-ring"></span>
+                <span>Standing By</span>
               </span>
             </div>
 
-            <!-- Orchestrator Status & Steps -->
-            <div class="space-y-3 py-1">
+            <!-- Active Directive Display -->
+            <div class="space-y-1.5">
+              <div class="text-[10px] font-mono text-indigo-300/80 uppercase tracking-wider flex items-center justify-between">
+                <span>Active Chat Directive</span>
+                <span id="directive-sync-badge" class="text-[9px] text-zinc-500">Listening on socket</span>
+              </div>
+              <div id="orch-directive-text" class="text-xs font-mono font-medium text-white p-3.5 rounded-xl bg-black/40 border border-indigo-500/20 min-h-[64px] flex items-center leading-relaxed">
+                <div class="flex items-center gap-1 text-zinc-400">
+                  <span>Awaiting task command in chat</span>
+                  <span class="cursor-blink text-indigo-400 font-bold">_</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Operations Progress & Steps ("العمليات اللي بتتم") -->
+            <div class="space-y-2.5 pt-1">
               <div class="text-[10px] font-mono text-indigo-300 uppercase tracking-wider flex items-center justify-between">
-                <span>Autonomous Decomposition</span>
+                <span>Orchestrator Operations Pipeline</span>
                 <span id="orch-domains-count" class="text-emerald-400 font-bold">0 Domains</span>
               </div>
 
@@ -142,7 +115,7 @@
                 <div class="p-2.5 rounded-lg bg-black/40 border border-indigo-500/20 flex items-center justify-between" id="step-01-row">
                   <span class="flex items-center gap-2 text-zinc-300">
                     <span class="text-indigo-400 font-bold">01</span>
-                    <span class="text-[11px]">AST & Repo Domain Analysis</span>
+                    <span class="text-[11px]">AST & Repo Domain Boundary Analysis</span>
                   </span>
                   <span class="text-[10px] font-semibold text-emerald-400" id="step-01-status">READY</span>
                 </div>
@@ -163,17 +136,29 @@
                   <span class="text-[10px] font-semibold text-zinc-500" id="step-03-status">STANDBY</span>
                 </div>
               </div>
+
+              <!-- Live Operations Log Stream -->
+              <div class="space-y-1 pt-1">
+                <div class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Live Activity Log</div>
+                <div id="orch-log-box" class="p-2.5 rounded-lg bg-black/60 border border-zinc-800 text-[10px] font-mono text-zinc-400 space-y-1 max-h-[85px] overflow-y-auto">
+                  <div class="text-zinc-500 flex items-center gap-1.5">
+                    <span class="text-emerald-400">●</span>
+                    <span>Orchestrator core initialized. Listening for directives...</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          <!-- Bottom Summary & Reset -->
-          <div class="pt-4 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-            <span id="orch-footer-note" class="flex items-center gap-1.5">
+          <!-- Footer & Reset Control -->
+          <div class="pt-3.5 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span class="flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-              <span>P2P Blackboard Linked</span>
+              <span>SQLite FTS5 Blackboard Active</span>
             </span>
             <button onclick="cleanActiveSwarm()" id="reset-swarm-btn" class="text-zinc-500 hover:text-rose-400 transition cursor-pointer hidden items-center gap-1">
-              <span>🔄 Reset</span>
+              <span>🔄 Reset Swarm</span>
             </button>
           </div>
 
@@ -182,36 +167,37 @@
         </div>
 
         <!-- ===================================================================
-             3. RIGHT COLUMN: PARALLEL AGENTS SWARM (4 Cols)
+             RIGHT STAGE: DYNAMIC SMALL AGENT CARDS ("مربعات صغيرة على يمينه")
              =================================================================== -->
-        <div class="lg:col-span-4 flex flex-col justify-between p-6 rounded-2xl bg-[var(--card-inner)] border border-[var(--border)] shadow-xl relative" id="agents-swarm-card">
+        <div class="w-full flex-1 flex flex-col justify-between p-6 rounded-2xl bg-[var(--card-inner)] border border-[var(--border)] shadow-xl relative min-h-[460px]" id="agents-stage">
           
-          <div class="space-y-4">
-            <!-- Header -->
+          <div class="space-y-4 w-full">
+            <!-- Stage Header -->
             <div class="flex items-center justify-between border-b border-[var(--border)] pb-3.5">
               <div class="flex items-center gap-2">
-                <span class="text-base">⚡</span>
-                <span class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Parallel Agents Swarm</span>
+                <span class="text-base text-emerald-400">⚡</span>
+                <div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Parallel Agent Worktrees</div>
+                  <div class="text-[10px] font-mono text-zinc-500">Autonomous Domain Slices Operating in Isolated Git Worktrees</div>
+                </div>
               </div>
-              <span id="agents-count-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                0 Active Worktrees
+              <span id="agents-count-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                0 Active Agents
               </span>
             </div>
 
-            <!-- Dynamic Agents Container -->
-            <div id="parallel-agents-container" class="space-y-3 overflow-y-auto max-h-[380px] pr-1">
-              <!-- Rendered via JS: either Standby slots or real active agent cards -->
+            <!-- Dynamic Small Cards Grid (Populated Live) -->
+            <div id="dynamic-agents-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <!-- Populated dynamically via JS: standby view or small agent cards -->
             </div>
           </div>
 
-          <!-- Bottom Footer Details -->
-          <div class="pt-4 border-t border-[var(--border)] mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500">
-            <span>AST Semantic Bus:</span>
-            <span class="text-emerald-400 font-semibold">Active & Conflict-Free ✓</span>
+          <!-- Stage Bottom Footer -->
+          <div class="pt-3.5 border-t border-[var(--border)] mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+            <span>Semantic Verification:</span>
+            <span class="text-emerald-400 font-semibold">AST Bus Protected • Zero Merge Conflicts</span>
           </div>
 
-          <!-- Indicator Line on Right Border -->
-          <div class="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 via-teal-500 to-emerald-600"></div>
         </div>
 
       </div>
@@ -220,7 +206,7 @@
   </main>
 
   <!-- =========================================================================
-       SSE & REAL-TIME FLOW LOGIC
+       REAL-TIME SSE & ORCHESTRATION CONTROLLER
        ========================================================================= -->
   <script>
     let activeSwarm = null;
@@ -231,43 +217,32 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // Default wireframe slots when in standby
-    function renderStandbySlots() {
-      const container = document.getElementById('parallel-agents-container');
-      if (!container) return;
+    function addOrchLog(text, color = "text-zinc-400") {
+      const box = document.getElementById('orch-log-box');
+      if (!box) return;
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const row = document.createElement('div');
+      row.className = `${color} flex items-center gap-1.5 truncate`;
+      row.innerHTML = `<span class="text-zinc-600">[${time}]</span> <span>${escapeHtml(text)}</span>`;
+      box.appendChild(row);
+      box.scrollTop = box.scrollHeight;
+    }
 
-      container.innerHTML = `
-        <div class="p-3.5 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/30 text-zinc-500 font-mono text-xs space-y-1.5 transition">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-zinc-400 flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-              Agent #1 • Domain Logic
-            </span>
-            <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">Standby</span>
-          </div>
-          <p class="text-[10px] text-zinc-600 leading-normal">Allocates automatically in an isolated Git worktree when command is sent.</p>
+    // Default standby placeholder inside the right stage
+    function renderStandbyState() {
+      const grid = document.getElementById('dynamic-agents-grid');
+      if (!grid) return;
+
+      grid.className = "flex flex-col items-center justify-center py-16 text-center space-y-3 w-full border border-dashed border-zinc-800 rounded-xl bg-black/20";
+      grid.innerHTML = `
+        <div class="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl text-zinc-500">
+          ⚡
         </div>
-
-        <div class="p-3.5 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/30 text-zinc-500 font-mono text-xs space-y-1.5 transition">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-zinc-400 flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-              Agent #2 • UI Surface
-            </span>
-            <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">Standby</span>
-          </div>
-          <p class="text-[10px] text-zinc-600 leading-normal">Allocates automatically in an isolated Git worktree when command is sent.</p>
-        </div>
-
-        <div class="p-3.5 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/30 text-zinc-500 font-mono text-xs space-y-1.5 transition">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-zinc-400 flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-              Agent #3 • Quality & Adversary
-            </span>
-            <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">Standby</span>
-          </div>
-          <p class="text-[10px] text-zinc-600 leading-normal">Allocates automatically in an isolated Git worktree when command is sent.</p>
+        <div class="space-y-1">
+          <div class="text-xs font-mono font-semibold text-zinc-400">Parallel Agents Standing By</div>
+          <p class="text-[10px] font-mono text-zinc-600 max-w-sm">
+            When you send a command in chat, the Orchestrator will calculate the domain boundaries and spawn small cards here in real time.
+          </p>
         </div>
       `;
     }
@@ -294,6 +269,7 @@
         });
         activeSwarm = null;
         resetToStandby();
+        addOrchLog("Swarm cleaned and reset to standby.", "text-amber-400");
       } catch (err) {
         console.error('Clean failed:', err);
       }
@@ -301,110 +277,95 @@
 
     function resetToStandby() {
       isAnalyzing = false;
-      
-      // 1. Reset Left Box
-      const pEl = document.getElementById('directive-prompt-text');
-      if (pEl) {
-        pEl.innerHTML = `
+
+      // 1. Reset Orchestrator Card on Left
+      const dirText = document.getElementById('orch-directive-text');
+      if (dirText) {
+        dirText.innerHTML = `
           <div class="flex items-center gap-1 text-zinc-400">
-            <span>Standing by for prompt in chat</span>
+            <span>Awaiting task command in chat</span>
             <span class="cursor-blink text-indigo-400 font-bold">_</span>
           </div>
         `;
       }
-      const bEl = document.getElementById('directive-status-badge');
-      if (bEl) {
-        bEl.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
-        bEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span><span>Listening...</span>`;
+      const syncBadge = document.getElementById('directive-sync-badge');
+      if (syncBadge) syncBadge.innerText = "Listening on socket";
+
+      const stateBadge = document.getElementById('orch-state-badge');
+      if (stateBadge) {
+        stateBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5";
+        stateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 status-ring"></span><span>Standing By</span>`;
       }
 
-      // 2. Reset Center Box
-      const oState = document.getElementById('orch-state-badge');
-      if (oState) {
-        oState.innerText = "Ready";
-        oState.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30";
-      }
       document.getElementById('orch-domains-count')?.replaceChildren(document.createTextNode('0 Domains'));
       document.getElementById('step-01-status')?.replaceChildren(document.createTextNode('READY'));
       document.getElementById('step-02-status')?.replaceChildren(document.createTextNode('STANDBY'));
       document.getElementById('step-03-status')?.replaceChildren(document.createTextNode('STANDBY'));
       document.getElementById('reset-swarm-btn')?.classList.add('hidden');
 
-      // 3. Reset Right Box
-      const aCount = document.getElementById('agents-count-badge');
-      if (aCount) {
-        aCount.innerText = "0 Active Worktrees";
-        aCount.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700";
+      // 2. Reset Right Stage
+      const countBadge = document.getElementById('agents-count-badge');
+      if (countBadge) {
+        countBadge.innerText = "0 Active Agents";
+        countBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700";
       }
-      renderStandbySlots();
+      renderStandbyState();
     }
 
     function showAnalyzing(prompt, roles) {
       isAnalyzing = true;
 
-      // 1. Fill Left Box with the command
-      const pEl = document.getElementById('directive-prompt-text');
-      if (pEl) {
-        pEl.innerHTML = `<span class="text-white font-mono">"${escapeHtml(prompt)}"</span>`;
+      // 1. Update Orchestrator Card on Left with Directive and Operations
+      const dirText = document.getElementById('orch-directive-text');
+      if (dirText) {
+        dirText.innerHTML = `<span class="text-white font-mono">"${escapeHtml(prompt)}"</span>`;
       }
-      const bEl = document.getElementById('directive-status-badge');
-      if (bEl) {
-        bEl.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5";
-        bEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span><span>Decomposing...</span>`;
+      const syncBadge = document.getElementById('directive-sync-badge');
+      if (syncBadge) syncBadge.innerText = "Processing directive...";
+
+      const stateBadge = document.getElementById('orch-state-badge');
+      if (stateBadge) {
+        stateBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/25 text-indigo-200 border border-indigo-400/50 animate-pulse flex items-center gap-1.5";
+        stateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span><span>Decomposing & Sizing</span>`;
       }
 
-      // 2. Light up Center Box
-      const oState = document.getElementById('orch-state-badge');
-      if (oState) {
-        oState.innerText = "Analyzing Critical Path...";
-        oState.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-indigo-500/20 text-indigo-200 border border-indigo-400/50 animate-pulse";
-      }
       const s1 = document.getElementById('step-01-status');
-      if (s1) {
-        s1.innerText = "VERIFIED ✓";
-        s1.className = "text-[10px] font-semibold text-emerald-400";
-      }
+      if (s1) { s1.innerText = "ANALYZING AST..."; s1.className = "text-[10px] font-semibold text-indigo-300 animate-pulse"; }
       const s2 = document.getElementById('step-02-status');
-      if (s2) {
-        s2.innerText = `SIZING (${roles.length || 3} ROLES)...`;
-        s2.className = "text-[10px] font-semibold text-indigo-300 animate-pulse";
-      }
+      if (s2) { s2.innerText = `SIZING (${roles.length || 3} DOMAINS)...`; s2.className = "text-[10px] font-semibold text-indigo-300 animate-pulse"; }
       const s3 = document.getElementById('step-03-status');
-      if (s3) {
-        s3.innerText = "ALLOCATING WORKTREES...";
-        s3.className = "text-[10px] font-semibold text-amber-400 animate-pulse";
-      }
+      if (s3) { s3.innerText = "ALLOCATING WORKTREES..."; s3.className = "text-[10px] font-semibold text-amber-400 animate-pulse"; }
 
-      // 3. Right Box Badge
-      const aCount = document.getElementById('agents-count-badge');
-      if (aCount) {
-        aCount.innerText = `Preparing ${roles.length || 3} Worktrees...`;
-        aCount.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse";
+      addOrchLog(`Directive received: "${prompt.slice(0, 45)}..."`, "text-indigo-300");
+      addOrchLog(`Decomposing domain boundaries into ${roles.length || 3} parallel agents...`, "text-emerald-400");
+
+      // 2. Prepare Right Stage
+      const countBadge = document.getElementById('agents-count-badge');
+      if (countBadge) {
+        countBadge.innerText = `Preparing ${roles.length || 3} Worktrees...`;
+        countBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse";
       }
     }
 
     function renderActiveSwarm(swarm, plan, promptText, activities = {}) {
       isAnalyzing = false;
 
-      // 1. Left Box: Received Directive
-      const pEl = document.getElementById('directive-prompt-text');
-      if (pEl && promptText) {
-        pEl.innerHTML = `<span class="text-white font-mono leading-relaxed">"${escapeHtml(promptText)}"</span>`;
+      // 1. Update Orchestrator on Left
+      const dirText = document.getElementById('orch-directive-text');
+      if (dirText && promptText) {
+        dirText.innerHTML = `<span class="text-white font-mono leading-relaxed">"${escapeHtml(promptText)}"</span>`;
       }
-      const bEl = document.getElementById('directive-status-badge');
-      if (bEl) {
-        bEl.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
-        bEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>Dispatched ✓</span>`;
+      const syncBadge = document.getElementById('directive-sync-badge');
+      if (syncBadge) syncBadge.innerText = "Dispatched & Active ✓";
+
+      const stateBadge = document.getElementById('orch-state-badge');
+      if (stateBadge) {
+        stateBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5";
+        stateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>Active Coordinator</span>`;
       }
 
-      // 2. Center Box: Active Coordinator
-      const oState = document.getElementById('orch-state-badge');
-      if (oState) {
-        oState.innerText = "Active Coordinator";
-        oState.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-      }
       document.getElementById('orch-domains-count')?.replaceChildren(document.createTextNode(`${swarm.worktrees.length} Domains Sized`));
-      
+
       const s1 = document.getElementById('step-01-status');
       if (s1) { s1.innerText = "VERIFIED ✓"; s1.className = "text-[10px] font-semibold text-emerald-400"; }
       const s2 = document.getElementById('step-02-status');
@@ -418,27 +379,33 @@
         resetBtn.classList.add('flex');
       }
 
-      // 3. Right Box: Render Real Agent Cards
-      const aCount = document.getElementById('agents-count-badge');
-      if (aCount) {
-        aCount.innerText = `${swarm.worktrees.length} Parallel Worktrees`;
-        aCount.className = "text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      addOrchLog(`All ${swarm.worktrees.length} isolated worktrees active and verified.`, "text-emerald-400");
+
+      // 2. Spawn Small Cards on the Right
+      const countBadge = document.getElementById('agents-count-badge');
+      if (countBadge) {
+        countBadge.innerText = `${swarm.worktrees.length} Parallel Worktrees Active`;
+        countBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
       }
 
-      const colors = ["#3b82f6", "#a855f7", "#10b981", "#f59e0b", "#ec4899", "#06b6d4"];
-      const container = document.getElementById('parallel-agents-container');
-      if (!container) return;
+      const grid = document.getElementById('dynamic-agents-grid');
+      if (!grid) return;
 
-      container.innerHTML = swarm.worktrees.map((wt, idx) => {
+      grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4 w-full";
+
+      const colors = ["#3b82f6", "#a855f7", "#10b981", "#f59e0b", "#ec4899", "#06b6d4"];
+
+      grid.innerHTML = swarm.worktrees.map((wt, idx) => {
         const color = colors[idx % colors.length];
         const taskText = plan[wt.role] || "Executing domain responsibility in isolated Git worktree";
-        const currentAct = activities[wt.role] || "Operating in isolated worktree...";
+        const currentAct = activities[wt.role] || `Operating in isolated worktree...`;
 
         return `
-          <div class="p-3.5 rounded-xl bg-black/40 border border-[var(--border)] hover:border-zinc-700 transition shadow-sm space-y-2.5 animate-enter">
+          <div class="p-3.5 rounded-xl bg-black/40 border border-[var(--border)] hover:border-zinc-700 transition shadow-md space-y-2.5 animate-enter">
+            <!-- Small Card Header -->
             <div class="flex items-center justify-between">
               <span class="font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5" style="color: ${color};">
-                <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${color};"></span>
+                <span class="w-2 h-2 rounded-full" style="background-color: ${color};"></span>
                 ${escapeHtml(wt.role)}
               </span>
               <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-semibold border border-emerald-500/20">
@@ -446,14 +413,16 @@
               </span>
             </div>
 
-            <!-- Prominent Live Activity Indicator ("الايجنت بيعمل ايه") -->
+            <!-- Prominent Live Operations Indicator ("العمليات البتحصل في الايجنت ده") -->
             <div class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px] font-mono">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring shrink-0"></span>
               <span class="truncate font-medium" id="act-${escapeHtml(wt.role)}">${escapeHtml(currentAct)}</span>
             </div>
 
+            <!-- Task Responsibility -->
             <p class="text-[11px] text-zinc-300 font-mono line-clamp-2 leading-relaxed">${escapeHtml(taskText)}</p>
 
+            <!-- Worktree Branch & Status -->
             <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
               <span class="truncate text-zinc-400" title="${escapeHtml(wt.branch)}">🌿 ${escapeHtml(wt.branch)}</span>
               <span class="text-emerald-400/90 font-semibold shrink-0">AST Bus ✓</span>
@@ -464,7 +433,7 @@
     }
 
     async function fetchStatus() {
-      if (isAnalyzing) return; // Do not disrupt analyzing animation
+      if (isAnalyzing) return; // Do not interrupt analyzing animation
 
       try {
         const res = await fetch('/api/status');
@@ -494,7 +463,7 @@
       if (window.location.protocol.startsWith('http')) {
         const evt = new EventSource('/events');
 
-        // 1. Orchestrator received command from chat
+        // 1. Orchestrator received command
         evt.addEventListener('orchestrator_thinking', (e) => {
           try {
             const data = JSON.parse(e.data);
@@ -504,7 +473,7 @@
           }
         });
 
-        // 2. Swarm created: populate parallel agents
+        // 2. Swarm created: spawn small cards to the right
         evt.addEventListener('swarm_created', (e) => {
           try {
             const data = JSON.parse(e.data);
@@ -513,13 +482,13 @@
 
             setTimeout(() => {
               renderActiveSwarm(activeSwarm, currentPlan, data.prompt, data.activities || {});
-            }, 1500);
+            }, 1200);
           } catch (err) {
             console.error(err);
           }
         });
 
-        // 3. Live agent activity update ("الايجنت بيعمل ايه")
+        // 3. Live agent activity update ("العمليات البتحصل")
         evt.addEventListener('agent_activity', (e) => {
           try {
             const data = JSON.parse(e.data);
@@ -529,6 +498,7 @@
               actEl.parentElement?.classList.add('animate-pulse');
               setTimeout(() => actEl.parentElement?.classList.remove('animate-pulse'), 800);
             }
+            addOrchLog(`[${data.role}] ${data.action}`, "text-zinc-300");
           } catch (err) {
             console.error(err);
           }
@@ -540,7 +510,7 @@
       }
     }
 
-    renderStandbySlots();
+    renderStandbyState();
     fetchStatus();
     initSSE();
     setInterval(fetchStatus, 1500);

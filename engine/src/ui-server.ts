@@ -344,9 +344,14 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
           const swarm = createSwarm(targetDir, roles, baseBranch);
           blackboard.post("architecture:plan", "initial_decomposition", JSON.stringify(plan), "orchestrator");
 
+          agentActivities = {};
+          for (const role of roles) {
+            agentActivities[role] = plan[role] ? `Active: ${plan[role]}` : "Executing domain responsibilities in worktree...";
+          }
+
           orchestratorPhase = "orchestrating";
 
-          broadcastEvent("swarm_created", { swarm, plan, roles, prompt });
+          broadcastEvent("swarm_created", { swarm, plan, roles, prompt, activities: agentActivities });
 
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ success: true, swarm, plan, roles, prompt }));
@@ -435,6 +440,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
           currentSwarmPlan = {};
           currentSwarmPrompt = "";
           orchestratorPhase = "idle";
+          agentActivities = {};
           broadcastEvent("swarm_cleaned", { swarmId, result });
 
           res.writeHead(200, { "Content-Type": "application/json" });
