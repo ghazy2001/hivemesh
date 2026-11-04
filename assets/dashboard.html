@@ -87,33 +87,39 @@
       <div class="flex flex-col lg:flex-row gap-6 items-stretch w-full">
         
         <!-- ===================================================================
-             LEFT DECK: ACTIVE CONVERSATION & OPERATIONS STREAM (Takes full column height)
+             LEFT DECK: MASTER ORCHESTRATOR & REAL-TIME OPERATIONS
              =================================================================== -->
-        <div class="w-full lg:w-[460px] shrink-0 flex flex-col p-6 rounded-2xl bg-gradient-to-b from-indigo-950/25 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300" id="main-agent-card">
+        <div class="w-full lg:w-[460px] shrink-0 flex flex-col p-6 rounded-2xl bg-gradient-to-b from-indigo-950/30 to-[var(--card-inner)] border border-indigo-500/35 shadow-xl relative transition-all duration-300" id="main-agent-card">
           
           <div class="space-y-4 shrink-0">
-            <!-- Header -->
+            <!-- Header: Master Orchestrator -->
             <div class="flex items-center justify-between border-b border-indigo-500/20 pb-3.5">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🤖</span>
+              <div class="flex items-center gap-2.5">
+                <span class="text-2xl">👑</span>
                 <div>
-                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-200">Antigravity Agent</div>
-                  <div class="text-[10px] font-mono text-zinc-500 truncate max-w-[200px]" id="current-conv-id">#active-session</div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                    <span>Master Orchestrator</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-normal">Autonomous Core</span>
+                  </div>
+                  <div class="text-[10px] font-mono text-zinc-400 truncate max-w-[220px]" id="current-conv-id">Active HiveMesh Session</div>
                 </div>
               </div>
               <span id="agent-state-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-                <span>Active</span>
+                <span>Active Coordinator</span>
               </span>
             </div>
 
-            <!-- 1. The Current User Prompt -->
+            <!-- 1. The Orchestrator's Active Directive (Prompt) -->
             <div class="space-y-1.5">
-              <div class="text-[10px] font-mono text-indigo-300/80 uppercase tracking-wider flex items-center justify-between">
-                <span>Chat Directive (Prompt)</span>
+              <div class="text-[10px] font-mono text-indigo-300 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <span>🎯</span>
+                  <span class="font-bold">الأمر الموجه للأوركستراتور (Active Directive)</span>
+                </span>
                 <span id="prompt-timestamp" class="text-[9px] text-zinc-500">Live Transcript</span>
               </div>
-              <div id="active-prompt-text" class="text-xs font-mono font-medium text-white p-3.5 rounded-xl bg-black/40 border border-indigo-500/20 min-h-[64px] flex items-center leading-relaxed">
+              <div id="active-prompt-text" class="text-xs font-mono font-medium text-white p-3.5 rounded-xl bg-black/60 border border-indigo-500/30 min-h-[70px] flex items-center leading-relaxed shadow-inner">
                 <div class="flex items-center gap-1 text-zinc-400">
                   <span>Listening to conversation transcript</span>
                   <span class="cursor-blink text-indigo-400 font-bold">_</span>
@@ -122,19 +128,19 @@
             </div>
           </div>
 
-          <!-- 2. Live Operations Stream taking ENTIRE remaining vertical column -->
+          <!-- 2. Live Operations Stream executing in sync with Antigravity -->
           <div class="flex-1 min-h-0 flex flex-col pt-3 space-y-2">
             <div class="text-[10px] font-mono text-indigo-300 uppercase tracking-wider flex items-center justify-between shrink-0">
               <span class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-                <span>Live Operations Stream</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 status-ring"></span>
+                <span class="font-bold">عمليات الأوركستراتور بالتزامن (Live Operations)</span>
               </span>
               <span id="ops-count-badge" class="text-zinc-500 text-[9px] font-mono">Real-Time Actions</span>
             </div>
 
             <!-- Sleek process list stretching to fill the entire column -->
             <div id="operations-list-box" class="flex-1 min-h-[300px] overflow-y-auto pr-1 space-y-1.5 text-xs font-mono">
-              <!-- Dynamically populated from transcript tool_calls -->
+              <!-- Dynamically populated from transcript tool_calls with interactive accordion -->
             </div>
           </div>
 
@@ -142,9 +148,9 @@
           <div class="pt-3.5 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500 shrink-0">
             <span class="flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-              <span>Brain Transcript Mirror Linked</span>
+              <span class="text-zinc-400">متزامن لحظياً مع Antigravity IDE</span>
             </span>
-            <span class="text-zinc-400 font-semibold" id="ops-total-count">0 Tools Run</span>
+            <span class="text-emerald-400 font-semibold" id="ops-total-count">0 Tools Run</span>
           </div>
 
           <!-- Top Glowing Accent Line -->
@@ -162,33 +168,41 @@
               <div class="flex items-center gap-2">
                 <span class="text-base text-emerald-400">⚡</span>
                 <div>
-                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Autonomous Subagents & Swarm Units</div>
-                  <div class="text-[10px] font-mono text-zinc-500">Live breakdown of parallel agents, worktree domains, and verified artifacts</div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <span>الايجنتس ووحدات السرب (Swarm Subagents)</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-normal">Autonomous Execution</span>
+                  </div>
+                  <div class="text-[10px] font-mono text-zinc-400">توزيع المهام وحالة كل إيجنت بيعمل إيه بالتوازي في مساحته المعزولة</div>
                 </div>
               </div>
-              <span id="subagents-count-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                0 Active Units
+              <span id="subagents-count-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                0 Units
               </span>
             </div>
 
-            <!-- Stage Filter Tabs: Running Now (Default) | Completed | Git Worktrees -->
+            <!-- Stage Filter Tabs: All Units (Default) | Running | Completed | Git Worktrees -->
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5 font-mono text-xs">
-              <div class="flex items-center gap-1.5">
-                <button onclick="setStageTab('running')" id="tab-running-btn" class="px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring" id="running-dot"></span>
-                  <span>الايجنتس الشغالة (Running)</span>
-                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-black/50" id="count-running">0</span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button onclick="setStageTab('all')" id="tab-all-btn" class="px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>عرض الكل (All Units)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-black/50" id="count-all">0</span>
+                </button>
+                <button onclick="setStageTab('running')" id="tab-running-btn" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800 transition cursor-pointer flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-400" id="running-dot"></span>
+                  <span>الشغالة حالياً (Running)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-zinc-800 text-zinc-300" id="count-running">0</span>
                 </button>
                 <button onclick="setStageTab('completed')" id="tab-completed-btn" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800 transition cursor-pointer flex items-center gap-1.5">
                   <span>المكتملة (Completed)</span>
                   <span class="px-1.5 py-0.2 rounded text-[10px] bg-zinc-800 text-zinc-300" id="count-completed">0</span>
                 </button>
                 <button onclick="setStageTab('worktrees')" id="tab-worktrees-btn" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800 transition cursor-pointer flex items-center gap-1.5">
-                  <span>Git Worktrees</span>
+                  <span>فروع العمل (Worktrees)</span>
                   <span class="px-1.5 py-0.2 rounded text-[10px] bg-zinc-800 text-zinc-300" id="count-worktrees">0</span>
                 </button>
               </div>
-              <span class="text-[10px] text-zinc-500" id="tab-hint">الايجنتس النشطة حالياً فقط</span>
+              <span class="text-[10px] text-zinc-500" id="tab-hint">تقسيم كامل للإيجنتس ووحدات العمل</span>
             </div>
 
             <!-- Dynamic Small Cards Grid (Updated in-place with zero flicker) -->
@@ -259,9 +273,10 @@
     let lastRenderedPrompt = '';
     let lastRenderedChipsHash = '';
     let lastRenderedOpsHash = '';
+    let lastRenderedStageHash = '';
     let currentBrainData = null;
     let currentSwarmsData = null;
-    let currentStageTab = 'running';
+    let currentStageTab = 'all';
     const expandedOpIds = new Set();
 
     function escapeHtml(str) {
@@ -392,6 +407,7 @@
       lastRenderedChipsHash = '';
       lastRenderedOpsHash = '';
       lastRenderedPrompt = '';
+      lastRenderedStageHash = '';
       if (convId === 'auto') {
         autoFollow = true;
         activeConversationId = null;
@@ -549,6 +565,107 @@
       }
     }
 
+    function buildSubagentCard(sa, isRunning, idx) {
+      const filesList = sa.files || [];
+      const isDone = !isRunning;
+      return {
+        kind: 'subagent',
+        id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
+        title: sa.role,
+        badge: isDone ? 'COMPLETED ✓' : 'RUNNING',
+        badgeClass: isDone
+          ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+          : 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+        color: isDone ? (idx === 0 ? '#6366f1' : '#a855f7') : '#3b82f6',
+        icon: '🤖',
+        mission: sa.mission || sa.prompt || 'Execute assigned directives',
+        activity: sa.action || (isDone ? `Completed • Generated ${filesList.length} files` : 'Operating in isolated workspace'),
+        files: filesList,
+        isDone: isDone,
+        footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • ${isDone ? 'Verified Output ✓' : 'Executing live ✓'}`
+      };
+    }
+
+    function buildWorktreeCard(wt, idx) {
+      return {
+        kind: 'worktree',
+        id: `worktree-${wt.role}`,
+        title: wt.role.toUpperCase(),
+        badge: 'GIT WORKTREE',
+        badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        color: '#10b981',
+        icon: '🌿',
+        domain: wt.description || 'Isolated Domain Workspace',
+        targetPackage: wt.targetPackage || wt.path.split(/[\\/]/).pop(),
+        branch: wt.branch,
+        activity: `Clean Git Worktree • Isolated on ${wt.branch.split('/').pop()}`,
+        footer: `Worktree: ${wt.path.split(/[\\/]/).pop()} • AST Semantic Guard ✓`
+      };
+    }
+
+    function renderCardHtml(card) {
+      let middleContent = '';
+      if (card.kind === 'subagent') {
+        const filesChips = (card.files && card.files.length > 0)
+          ? `<div class="pt-1.5 space-y-1">
+               <div class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Created Artifacts (${card.files.length}):</div>
+               <div class="flex flex-wrap gap-1">
+                 ${card.files.map(f => `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-indigo-300 border border-zinc-700/80 truncate max-w-[170px]">${escapeHtml(f)}</span>`).join('')}
+               </div>
+             </div>`
+          : '';
+
+        middleContent = `
+          <div class="text-[11px] font-mono text-zinc-300 leading-snug">
+            <span class="text-zinc-500">Mission:</span> ${escapeHtml(card.mission)}
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px] font-mono">
+            <span class="w-1.5 h-1.5 rounded-full ${card.isDone ? 'bg-emerald-400' : 'bg-blue-400 status-ring'} shrink-0"></span>
+            <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
+          </div>
+          ${filesChips}
+        `;
+      } else if (card.kind === 'worktree') {
+        middleContent = `
+          <div class="text-[11px] font-mono text-zinc-300 leading-snug">
+            <span class="text-zinc-500">Domain:</span> ${escapeHtml(card.domain)}
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between text-[11px] font-mono">
+            <span class="text-zinc-400">Target:</span>
+            <span class="text-indigo-300 font-semibold truncate max-w-[200px]">${escapeHtml(card.targetPackage)}</span>
+          </div>
+          <div class="text-[10px] font-mono text-zinc-400 flex items-center justify-between pt-0.5">
+            <span class="truncate">Branch: <span class="text-zinc-200">${escapeHtml(card.branch)}</span></span>
+            <span class="text-emerald-400 font-semibold shrink-0">Ready ✓</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div id="${card.id}" onclick="openCardInspector('${card.id}')" class="p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-indigo-500/60 hover:bg-zinc-900/60 transition shadow-md space-y-2.5 cursor-pointer group">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5" style="color: ${card.color};">
+              <span class="text-sm">${card.icon}</span>
+              ${escapeHtml(card.title)}
+            </span>
+            <div class="flex items-center gap-1.5">
+              <span id="badge-${card.id}" class="text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}">
+                ${escapeHtml(card.badge)}
+              </span>
+              <span class="text-[11px] text-zinc-500 group-hover:text-indigo-400 font-mono transition">↗</span>
+            </div>
+          </div>
+          ${middleContent}
+          <div class="pt-2 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80">
+            <span class="truncate text-zinc-400" id="foot-${card.id}">${escapeHtml(card.footer)}</span>
+            <span class="text-indigo-400/90 group-hover:text-indigo-300 font-semibold shrink-0 transition flex items-center gap-1">
+              <span>View Full Details</span> ↗
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
     function renderRightStage(brain, swarms) {
       const grid = document.getElementById('subagents-grid') || document.getElementById('dynamic-agents-grid');
       const badge = document.getElementById('subagents-count-badge');
@@ -559,8 +676,11 @@
 
       const runningSubagents = subagents.filter(sa => sa.isRunning);
       const completedSubagents = subagents.filter(sa => !sa.isRunning);
+      const totalUnits = runningSubagents.length + completedSubagents.length + swarmWorktrees.length;
 
       // Update Tab Counter Badges
+      const countAllEl = document.getElementById('count-all');
+      if (countAllEl) countAllEl.innerText = totalUnits;
       const countRunEl = document.getElementById('count-running');
       if (countRunEl) countRunEl.innerText = runningSubagents.length;
       const countCompEl = document.getElementById('count-completed');
@@ -570,7 +690,10 @@
 
       // Update Top Status Badge
       if (badge) {
-        if (currentStageTab === 'running') {
+        if (currentStageTab === 'all') {
+          badge.innerText = `${runningSubagents.length} Running • ${completedSubagents.length} Done`;
+          badge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30";
+        } else if (currentStageTab === 'running') {
           badge.innerText = `${runningSubagents.length} Running Now`;
           badge.className = runningSubagents.length > 0
             ? "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
@@ -584,9 +707,80 @@
         }
       }
 
-      // 1. When on 'running' tab and no subagents are currently executing:
-      if (currentStageTab === 'running' && runningSubagents.length === 0) {
-        if (!document.getElementById('empty-running-placeholder')) {
+      // Memoization hash to prevent unnecessary DOM recreation and eliminate flicker
+      const stageHash = `${currentStageTab}|${subagents.map(s => s.role + ':' + s.isRunning + ':' + (s.files?.length || 0) + ':' + s.action).join(',')}|${swarmWorktrees.map(w => w.role + ':' + w.branch).join(',')}`;
+      if (stageHash === lastRenderedStageHash) {
+        return; // Zero DOM changes, perfectly stable!
+      }
+      lastRenderedStageHash = stageHash;
+
+      // 1. ALL UNITS TAB: Neat Segmented Breakdown ("متقسمة")
+      if (currentStageTab === 'all') {
+        let html = '';
+
+        // Section 1: Running Subagents
+        if (runningSubagents.length > 0) {
+          html += `
+            <div class="col-span-1 md:col-span-2 flex items-center justify-between pb-1 pt-1 border-b border-blue-500/30 font-mono text-xs">
+              <div class="flex items-center gap-2 font-bold text-blue-400">
+                <span class="w-2 h-2 rounded-full bg-blue-400 status-ring"></span>
+                <span>⚡ الايجنتس النشطة حالياً في السرب (Active Running)</span>
+              </div>
+              <span class="text-[10px] text-blue-400 font-semibold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">${runningSubagents.length} شغال بالتوازي</span>
+            </div>
+          `;
+          runningSubagents.forEach((sa, idx) => {
+            html += renderCardHtml(buildSubagentCard(sa, true, idx));
+          });
+        } else {
+          html += `
+            <div class="col-span-1 md:col-span-2 px-3.5 py-2.5 rounded-xl bg-black/40 border border-zinc-800/80 font-mono text-xs flex items-center justify-between">
+              <div class="flex items-center gap-2.5 text-zinc-300">
+                <span class="w-2 h-2 rounded-full bg-zinc-600"></span>
+                <span class="text-zinc-400">لا توجد Subagents شغالة في هذه اللحظة — الأوركستراتور في وضع الجاهزية</span>
+              </div>
+              <span class="text-zinc-500 text-[10px] bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">Standby</span>
+            </div>
+          `;
+        }
+
+        // Section 2: Completed Subagents
+        if (completedSubagents.length > 0) {
+          html += `
+            <div class="col-span-1 md:col-span-2 flex items-center justify-between pb-1 pt-3 border-b border-indigo-500/30 font-mono text-xs">
+              <div class="flex items-center gap-2 font-bold text-indigo-400">
+                <span>✅ الايجنتس المكتملة ومخرجات العمل (Completed Deliverables)</span>
+              </div>
+              <span class="text-[10px] text-indigo-300 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">${completedSubagents.length} مكتمل</span>
+            </div>
+          `;
+          completedSubagents.forEach((sa, idx) => {
+            html += renderCardHtml(buildSubagentCard(sa, false, idx));
+          });
+        }
+
+        // Section 3: Swarm Worktrees
+        if (swarmWorktrees.length > 0) {
+          html += `
+            <div class="col-span-1 md:col-span-2 flex items-center justify-between pb-1 pt-3 border-b border-emerald-500/30 font-mono text-xs">
+              <div class="flex items-center gap-2 font-bold text-emerald-400">
+                <span>🌿 بيئات وفروع العمل المعزولة (Git Worktree Domains)</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">${swarmWorktrees.length} بيئة معزولة</span>
+            </div>
+          `;
+          swarmWorktrees.forEach((wt, idx) => {
+            html += renderCardHtml(buildWorktreeCard(wt, idx));
+          });
+        }
+
+        grid.innerHTML = html;
+        return;
+      }
+
+      // 2. RUNNING ONLY TAB
+      if (currentStageTab === 'running') {
+        if (runningSubagents.length === 0) {
           grid.innerHTML = `
             <div id="empty-running-placeholder" class="col-span-1 md:col-span-2 flex flex-col items-center justify-center p-10 text-center rounded-2xl bg-black/30 border border-zinc-800/80 space-y-3.5">
               <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl text-zinc-400 shadow-inner">
@@ -599,189 +793,54 @@
                 </div>
               </div>
               <div class="pt-2 flex flex-wrap items-center justify-center gap-2">
+                <button onclick="setStageTab('all')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
+                  <span>عرض كل الوحدات (All Units)</span> ↗
+                </button>
                 <button onclick="setStageTab('completed')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
                   <span>عرض الايجنتس المكتملة (${completedSubagents.length})</span> ↗
                 </button>
-                <button onclick="setStageTab('worktrees')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
-                  <span>عرض الـ Git Worktrees (${swarmWorktrees.length})</span> ↗
-                </button>
               </div>
             </div>
           `;
+        } else {
+          grid.innerHTML = runningSubagents.map((sa, idx) => renderCardHtml(buildSubagentCard(sa, true, idx))).join('');
         }
         return;
-      } else {
-        const ph = document.getElementById('empty-running-placeholder');
-        if (ph) ph.remove();
       }
 
-      // 2. Build cardsData depending on the active tab
-      const cardsData = [];
-
-      if (currentStageTab === 'running') {
-        runningSubagents.forEach((sa, idx) => {
-          const filesList = sa.files || [];
-          cardsData.push({
-            kind: 'subagent',
-            id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
-            title: sa.role,
-            badge: 'RUNNING',
-            badgeClass: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-            color: '#3b82f6',
-            icon: '🤖',
-            mission: sa.mission || sa.prompt || 'Execute assigned directives',
-            activity: sa.action || 'Operating in isolated workspace',
-            files: filesList,
-            isDone: false,
-            footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • Executing live ✓`
-          });
-        });
-      } else if (currentStageTab === 'completed') {
-        completedSubagents.forEach((sa, idx) => {
-          const filesList = sa.files || [];
-          cardsData.push({
-            kind: 'subagent',
-            id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
-            title: sa.role,
-            badge: 'COMPLETED ✓',
-            badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-            color: idx === 0 ? '#6366f1' : '#a855f7',
-            icon: '🤖',
-            mission: sa.mission || sa.prompt || 'Execute assigned directives',
-            activity: sa.action || `Completed • Generated ${filesList.length} files`,
-            files: filesList,
-            isDone: true,
-            footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • Verified Output ✓`
-          });
-        });
-      } else if (currentStageTab === 'worktrees') {
-        swarmWorktrees.forEach((wt, idx) => {
-          cardsData.push({
-            kind: 'worktree',
-            id: `worktree-${wt.role}`,
-            title: wt.role.toUpperCase(),
-            badge: 'GIT WORKTREE',
-            badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-            color: '#10b981',
-            icon: '🌿',
-            domain: wt.description || 'Isolated Domain Workspace',
-            targetPackage: wt.targetPackage || wt.path.split(/[\\/]/).pop(),
-            branch: wt.branch,
-            activity: `Clean Git Worktree • Isolated on ${wt.branch.split('/').pop()}`,
-            footer: `Worktree: ${wt.path.split(/[\\/]/).pop()} • AST Semantic Guard ✓`
-          });
-        });
-      }
-
-      // Update existing DOM cards in-place to prevent any flickering!
-      cardsData.forEach(card => {
-        let el = document.getElementById(card.id);
-        if (el) {
-          // UPDATE IN-PLACE (ZERO FLICKER)
-          const actEl = document.getElementById(`act-${card.id}`);
-          if (actEl && actEl.innerText !== card.activity) {
-            actEl.innerText = card.activity;
-          }
-          const footEl = document.getElementById(`foot-${card.id}`);
-          if (footEl && footEl.innerText !== card.footer) {
-            footEl.innerText = card.footer;
-          }
-          const badgeEl = document.getElementById(`badge-${card.id}`);
-          if (badgeEl && badgeEl.innerText !== card.badge) {
-            badgeEl.innerText = card.badge;
-            badgeEl.className = `text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}`;
-          }
-        } else {
-          // CREATE ONCE
-          const div = document.createElement('div');
-          div.id = card.id;
-          div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-indigo-500/60 hover:bg-zinc-900/60 transition shadow-md space-y-2.5 cursor-pointer group";
-          div.onclick = () => openCardInspector(card.id);
-
-          let middleContent = '';
-          if (card.kind === 'subagent') {
-            const filesChips = (card.files && card.files.length > 0)
-              ? `<div class="pt-1.5 space-y-1">
-                   <div class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Created Artifacts (${card.files.length}):</div>
-                   <div class="flex flex-wrap gap-1">
-                     ${card.files.map(f => `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-indigo-300 border border-zinc-700/80 truncate max-w-[170px]">${escapeHtml(f)}</span>`).join('')}
-                   </div>
-                 </div>`
-              : '';
-
-            middleContent = `
-              <div class="text-[11px] font-mono text-zinc-300 leading-snug">
-                <span class="text-zinc-500">Mission:</span> ${escapeHtml(card.mission)}
-              </div>
-              <div class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px] font-mono">
-                <span class="w-1.5 h-1.5 rounded-full ${card.isDone ? 'bg-emerald-400' : 'bg-blue-400 status-ring'} shrink-0"></span>
-                <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
-              </div>
-              ${filesChips}
-            `;
-          } else if (card.kind === 'worktree') {
-            middleContent = `
-              <div class="text-[11px] font-mono text-zinc-300 leading-snug">
-                <span class="text-zinc-500">Domain:</span> ${escapeHtml(card.domain)}
-              </div>
-              <div class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between text-[11px] font-mono">
-                <span class="text-zinc-400">Target:</span>
-                <span class="text-indigo-300 font-semibold truncate max-w-[200px]">${escapeHtml(card.targetPackage)}</span>
-              </div>
-              <div class="text-[10px] font-mono text-zinc-400 flex items-center justify-between pt-0.5">
-                <span class="truncate">Branch: <span class="text-zinc-200">${escapeHtml(card.branch)}</span></span>
-                <span class="text-emerald-400 font-semibold shrink-0">Ready ✓</span>
-              </div>
-            `;
-          } else {
-            middleContent = `
-              <div class="text-[11px] font-mono text-zinc-300 leading-snug">
-                <span class="text-zinc-500">Status:</span> ${escapeHtml(card.mission)}
-              </div>
-              <div class="px-2.5 py-1.5 rounded-lg bg-indigo-950/30 border border-indigo-500/20 flex items-center gap-2 text-indigo-300 text-[11px] font-mono">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 status-ring shrink-0"></span>
-                <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
-              </div>
-            `;
-          }
-
-          div.innerHTML = `
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5" style="color: ${card.color};">
-                <span class="text-sm">${card.icon}</span>
-                ${escapeHtml(card.title)}
-              </span>
-              <div class="flex items-center gap-1.5">
-                <span id="badge-${card.id}" class="text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}">
-                  ${escapeHtml(card.badge)}
-                </span>
-                <span class="text-[11px] text-zinc-500 group-hover:text-indigo-400 font-mono transition">↗</span>
-              </div>
-            </div>
-            ${middleContent}
-            <div class="pt-2 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80">
-              <span class="truncate text-zinc-400" id="foot-${card.id}">${escapeHtml(card.footer)}</span>
-              <span class="text-indigo-400/90 group-hover:text-indigo-300 font-semibold shrink-0 transition flex items-center gap-1">
-                <span>View Full Details</span> ↗
-              </span>
+      // 3. COMPLETED ONLY TAB
+      if (currentStageTab === 'completed') {
+        if (completedSubagents.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-1 md:col-span-2 p-8 text-center text-zinc-500 font-mono text-xs">
+              لا توجد إيجنتس مكتملة بعد في هذه الجلسة.
             </div>
           `;
-          grid.appendChild(div);
+        } else {
+          grid.innerHTML = completedSubagents.map((sa, idx) => renderCardHtml(buildSubagentCard(sa, false, idx))).join('');
         }
-      });
+        return;
+      }
 
-      // Remove obsolete cards
-      const activeCardIds = new Set(cardsData.map(c => c.id));
-      Array.from(grid.children).forEach(child => {
-        if (child.id && !activeCardIds.has(child.id)) {
-          child.remove();
+      // 4. WORKTREES ONLY TAB
+      if (currentStageTab === 'worktrees') {
+        if (swarmWorktrees.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-1 md:col-span-2 p-8 text-center text-zinc-500 font-mono text-xs">
+              لا توجد فروع عمل معزولة مسجلة في هذا السرب.
+            </div>
+          `;
+        } else {
+          grid.innerHTML = swarmWorktrees.map((wt, idx) => renderCardHtml(buildWorktreeCard(wt, idx))).join('');
         }
-      });
+        return;
+      }
     }
 
     function setStageTab(tab) {
       currentStageTab = tab;
-      ['running', 'completed', 'worktrees'].forEach(t => {
+      lastRenderedStageHash = ''; // Invalidate memoized hash so renderRightStage updates immediately
+      ['all', 'running', 'completed', 'worktrees'].forEach(t => {
         const btn = document.getElementById(`tab-${t}-btn`);
         if (btn) {
           if (t === tab) {
@@ -794,13 +853,12 @@
 
       const hintEl = document.getElementById('tab-hint');
       if (hintEl) {
-        if (tab === 'running') hintEl.innerText = 'الايجنتس النشطة حالياً فقط';
-        else if (tab === 'completed') hintEl.innerText = 'سجل الايجنتس المكتملة';
+        if (tab === 'all') hintEl.innerText = 'تقسيم متكامل لكافة وحدات وإيجنتس السرب';
+        else if (tab === 'running') hintEl.innerText = 'الايجنتس النشطة حالياً فقط';
+        else if (tab === 'completed') hintEl.innerText = 'سجل الايجنتس المكتملة ومخرجاتها';
         else hintEl.innerText = 'فروع الـ Git المعزولة على الهارد ديسك';
       }
 
-      const grid = document.getElementById('subagents-grid');
-      if (grid) grid.innerHTML = ''; // reset cards when switching tab
       if (currentBrainData) {
         renderRightStage(currentBrainData, currentSwarmsData || []);
       }
