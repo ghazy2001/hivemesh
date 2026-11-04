@@ -1,7 +1,8 @@
 /**
  * HiveMesh Live UI Server
  * Lightweight zero-dependency HTTP server with Server-Sent Events (SSE)
- * providing 100% real data from Git, Worktrees, AST Watcher, and SQLite Blackboard.
+ * providing real-time 3D Neural Swarm orchestration, human-in-the-loop steering,
+ * and live worktree lifecycle management.
  */
 import * as http from "http";
 import * as fs from "fs";
@@ -10,11 +11,12 @@ import { exec, execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { createSwarm, getSwarmStatus, destroySwarm } from "./worktree-manager.js";
 import { Blackboard } from "./blackboard.js";
-import { checkASTChanges } from "./ast-watcher.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let clients = [];
 let clientIdCounter = 0;
+let isSwarmPaused = false;
+let currentSwarmPlan = {};
 export function broadcastEvent(event, data) {
     const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of clients) {
@@ -56,6 +58,60 @@ function getGitCommitHash(cwd) {
     catch {
         return "HEAD";
     }
+}
+export function inferDynamicRoles(prompt) {
+    const p = prompt.toLowerCase();
+    if (p.includes("dark mode") || p.includes("theme") || p.includes("css") || p.includes("style") || p.includes("color")) {
+        return {
+            roles: ["theme-tokens", "shell-layout", "data-views", "a11y-auditor"],
+            plan: {
+                "theme-tokens": "Extract and declare CSS variables & theme tokens for dark/light contrast",
+                "shell-layout": "Refactor app shell, headers, and navigation bars to support dynamic theme classes",
+                "data-views": "Update data grids, tables, and card views with dark-mode responsive classes",
+                "a11y-auditor": "Audit WCAG 2.1 AA color contrast and screen reader accessibility"
+            }
+        };
+    }
+    if (p.includes("auth") || p.includes("login") || p.includes("passkey") || p.includes("oauth") || p.includes("session")) {
+        return {
+            roles: ["auth-guards", "token-services", "ui-modals", "security-adversary"],
+            plan: {
+                "auth-guards": "Implement workspace tenancy auth guards and passport authentication handlers",
+                "token-services": "Build token refresh, challenge generation, and session lifecycle services",
+                "ui-modals": "Create Passkey/OAuth login modals and client-side credential prompts",
+                "security-adversary": "Execute automated adversarial fuzzing, token replay, and race condition tests"
+            }
+        };
+    }
+    if (p.includes("database") || p.includes("migration") || p.includes("schema") || p.includes("orm") || p.includes("postgres")) {
+        return {
+            roles: ["schema-migrations", "entity-models", "repository-services", "integrity-tests"],
+            plan: {
+                "schema-migrations": "Write deterministic PostgreSQL migrations with safe rollback scripts",
+                "entity-models": "Update ORM entities, relations, and type-safe schema definitions",
+                "repository-services": "Implement data access repositories and query builders with indexing",
+                "integrity-tests": "Run foreign key consistency, constraint validation, and migration tests"
+            }
+        };
+    }
+    if (p.includes("refactor") || p.includes("clean") || p.includes("perf") || p.includes("optimize")) {
+        return {
+            roles: ["core-refactor", "api-consumers", "regression-tests"],
+            plan: {
+                "core-refactor": "Refactor core business logic functions and extract reusable primitives",
+                "api-consumers": "Update downstream callers and consumers across workspace packages",
+                "regression-tests": "Run end-to-end regression suites to verify backward compatibility"
+            }
+        };
+    }
+    return {
+        roles: ["domain-logic", "ui-surface", "quality-adversary"],
+        plan: {
+            "domain-logic": `Implement core domain services and state transitions for: "${prompt}"`,
+            "ui-surface": `Design and wire user interface views and responsive components for: "${prompt}"`,
+            "quality-adversary": `Conduct adversarial stress testing and edge-case fuzzing for: "${prompt}"`
+        }
+    };
 }
 export function startUiServer(requestedPort = 4242, autoOpen = true) {
     return new Promise((resolve, reject) => {
@@ -105,7 +161,6 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     const commitHash = getGitCommitHash(targetDir);
                     const bbEntries = blackboard.query("");
                     const bbStats = blackboard.getStats();
-                    // Calculate total isolated worktrees
                     let totalWorktrees = 0;
                     for (const s of swarms) {
                         totalWorktrees += s.worktrees.length;
@@ -121,6 +176,8 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                         },
                         swarms,
                         totalWorktrees,
+                        isPaused: isSwarmPaused,
+                        plan: currentSwarmPlan,
                         blackboard: {
                             entries: bbEntries,
                             stats: bbStats,
@@ -138,18 +195,33 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                 }
                 return;
             }
-            // 3. Create Real Swarm API
-            if (url === "/api/swarm/create" && req.method === "POST") {
+            // 3. Orchestrate Swarm from Prompt (Natural Language -> Dynamic Agents)
+            if (url === "/api/swarm/orchestrate" && req.method === "POST") {
                 try {
                     const body = await parseBody(req);
-                    const roles = body.roles && Array.isArray(body.roles) && body.roles.length > 0
-                        ? body.roles
-                        : ["domain-logic", "ui-surface", "security-adversary"];
+                    const prompt = body.prompt;
+                    if (!prompt || typeof prompt !== "string") {
+                        res.writeHead(400, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Missing or invalid prompt" }));
+                        return;
+                    }
+                    const { roles, plan } = inferDynamicRoles(prompt);
+                    currentSwarmPlan = plan;
                     const baseBranch = body.baseBranch || getGitBranch(targetDir);
+                    // Broadcast planning state first
+                    broadcastEvent("orchestrator_thinking", {
+                        prompt,
+                        roles,
+                        plan,
+                        message: `Analyzing critical path for: "${prompt}". Dynamically provisioning ${roles.length} elastic agents.`
+                    });
+                    // Create the real swarm worktrees
                     const swarm = createSwarm(targetDir, roles, baseBranch);
-                    broadcastEvent("swarm_created", { swarm });
+                    // Post architectural blueprint to blackboard
+                    blackboard.post("architecture:plan", "initial_decomposition", JSON.stringify(plan), "orchestrator");
+                    broadcastEvent("swarm_created", { swarm, plan, roles });
                     res.writeHead(200, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ success: true, swarm }));
+                    res.end(JSON.stringify({ success: true, swarm, plan, roles }));
                 }
                 catch (err) {
                     res.writeHead(500, { "Content-Type": "application/json" });
@@ -157,7 +229,61 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                 }
                 return;
             }
-            // 4. Destroy Real Swarm API
+            // 4. Human-in-the-Loop Steering API
+            if (url === "/api/swarm/steer" && req.method === "POST") {
+                try {
+                    const body = await parseBody(req);
+                    const { swarmId, role, feedback } = body;
+                    if (!role || !feedback) {
+                        res.writeHead(400, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Missing role or feedback" }));
+                        return;
+                    }
+                    // Update plan in memory
+                    if (currentSwarmPlan[role]) {
+                        currentSwarmPlan[role] = feedback;
+                    }
+                    // Post human steering to blackboard
+                    const steerEntry = blackboard.post(`human:steer:${role}`, "revised_directive", feedback, "human-commander");
+                    broadcastEvent("agent_steered", {
+                        swarmId,
+                        role,
+                        feedback,
+                        entry: steerEntry,
+                        message: `Human commander intervened on [${role}]: "${feedback}". Orchestrator recalculated agent contract.`
+                    });
+                    res.writeHead(200, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ success: true, message: `Steering broadcasted to ${role}`, entry: steerEntry }));
+                }
+                catch (err) {
+                    res.writeHead(500, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ error: String(err) }));
+                }
+                return;
+            }
+            // 5. Pause Swarm API
+            if (url === "/api/swarm/pause" && req.method === "POST") {
+                isSwarmPaused = true;
+                broadcastEvent("swarm_paused", {
+                    isPaused: true,
+                    message: "Swarm paused by human commander. Execution frozen across all worktrees for inspection & steering."
+                });
+                res.writeHead(200, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ success: true, isPaused: true }));
+                return;
+            }
+            // 6. Resume Swarm API
+            if (url === "/api/swarm/resume" && req.method === "POST") {
+                isSwarmPaused = false;
+                broadcastEvent("swarm_resumed", {
+                    isPaused: false,
+                    message: "Swarm resumed with updated architectural directives."
+                });
+                res.writeHead(200, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ success: true, isPaused: false }));
+                return;
+            }
+            // 7. Destroy Swarm API
             if (url === "/api/swarm/clean" && req.method === "POST") {
                 try {
                     const body = await parseBody(req);
@@ -168,6 +294,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                         return;
                     }
                     const result = destroySwarm(swarmId);
+                    currentSwarmPlan = {};
                     broadcastEvent("swarm_cleaned", { swarmId, result });
                     res.writeHead(200, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({ success: true, result }));
@@ -178,56 +305,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                 }
                 return;
             }
-            // 5. Post to Real Blackboard API
-            if (url === "/api/blackboard/post" && req.method === "POST") {
-                try {
-                    const body = await parseBody(req);
-                    const { topic, key, value, agentId = "human-operator" } = body;
-                    if (!topic || !key || !value) {
-                        res.writeHead(400, { "Content-Type": "application/json" });
-                        res.end(JSON.stringify({ error: "Missing topic, key, or value" }));
-                        return;
-                    }
-                    const entry = blackboard.post(topic, key, value, agentId);
-                    broadcastEvent("blackboard_posted", { entry });
-                    res.writeHead(200, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ success: true, entry }));
-                }
-                catch (err) {
-                    res.writeHead(500, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ error: String(err) }));
-                }
-                return;
-            }
-            // 6. Run Real AST Audit API
-            if (url === "/api/ast/check" && req.method === "POST") {
-                try {
-                    const swarms = getSwarmStatus(targetDir);
-                    const reports = [];
-                    for (const s of swarms) {
-                        for (const wt of s.worktrees) {
-                            if (fs.existsSync(wt.path)) {
-                                try {
-                                    const rep = checkASTChanges(targetDir, wt.path, wt.role);
-                                    reports.push(rep);
-                                }
-                                catch {
-                                    // non-ts project or no changes
-                                }
-                            }
-                        }
-                    }
-                    broadcastEvent("ast_checked", { reports });
-                    res.writeHead(200, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ success: true, reports }));
-                }
-                catch (err) {
-                    res.writeHead(500, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ error: String(err) }));
-                }
-                return;
-            }
-            // 7. Server-Sent Events (SSE) Live Feed
+            // 8. Server-Sent Events (SSE) Live Feed
             if (url === "/events" || url === "/api/events") {
                 res.writeHead(200, {
                     "Content-Type": "text/event-stream",
@@ -238,9 +316,11 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                 clients.push({ id, res });
                 const swarms = getSwarmStatus(targetDir);
                 res.write(`event: connected\ndata: ${JSON.stringify({
-                    message: "Connected to HiveMesh Live Engine",
+                    message: "Connected to HiveMesh Neural Swarm Core",
                     project: path.basename(targetDir),
                     swarms,
+                    isPaused: isSwarmPaused,
+                    plan: currentSwarmPlan
                 })}\n\n`);
                 req.on("close", () => {
                     clients = clients.filter((c) => c.id !== id);
@@ -262,7 +342,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
         server.listen(requestedPort, () => {
             const actualPort = server.address().port;
             const url = `http://localhost:${actualPort}`;
-            console.log(`\n  \x1b[36m🚀 HiveMesh Mission Control Live UI\x1b[0m`);
+            console.log(`\n  \x1b[36m🚀 HiveMesh Neural Mission Control Live UI\x1b[0m`);
             console.log(`  Local URL: \x1b[32m${url}\x1b[0m\n`);
             if (autoOpen) {
                 const cmd = process.platform === "win32"

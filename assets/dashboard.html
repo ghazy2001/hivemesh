@@ -3,488 +3,757 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HiveMesh Mission Control</title>
+  <title>HiveMesh Neural Swarm Cockpit</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     :root {
-      --bg: #09090b;
-      --card: #121215;
-      --card-inner: #18181c;
-      --border: #222226;
-      --border-bright: #303038;
-      --foreground: #f4f4f5;
-      --muted: #71717a;
+      --bg: #030306;
+      --foreground: #f4f4f6;
+      --card-hud: rgba(12, 12, 18, 0.75);
+      --border-hud: rgba(255, 255, 255, 0.08);
+      --border-hud-bright: rgba(99, 102, 241, 0.35);
       --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.15);
+      --accent-glow: rgba(99, 102, 241, 0.3);
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
-    [data-theme="emerald"] {
-      --bg: #030705;
-      --card: #09120c;
-      --card-inner: #0f1c14;
-      --border: #14281c;
-      --border-bright: #1f3d2b;
-      --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.15);
+    body {
+      background-color: var(--bg);
+      color: var(--foreground);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      margin: 0;
+      user-select: none;
     }
 
-    [data-theme="oled"] {
-      --bg: #000000;
-      --card: #080808;
-      --card-inner: #101010;
-      --border: #1a1a1a;
-      --border-bright: #262626;
-      --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.15);
+    /* Subtle HUD Glows */
+    .hud-glass {
+      background: var(--card-hud);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-hud);
+    }
+    .hud-glass:hover {
+      border-color: var(--border-hud-bright);
     }
 
-    @keyframes pulse-subtle {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.9); }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); opacity: 0.9; }
+      50% { transform: scale(1.3); opacity: 0.2; }
+      100% { transform: scale(0.9); opacity: 0.9; }
     }
-    .status-dot {
-      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    .status-ring {
+      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Terminal scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
     }
   </style>
 </head>
-<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen p-4 md:p-8 font-sans selection:bg-indigo-500/20 transition-colors duration-200">
+<body class="w-screen h-screen relative bg-[#030306]">
 
-  <div class="max-w-4xl mx-auto space-y-6">
+  <!-- =========================================================================
+       1. 3D INTERACTIVE NEURAL CONSTELLATION CANVAS
+       ========================================================================= -->
+  <canvas id="galaxy-canvas" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></canvas>
 
-    <!-- =======================================================================
-         1. CLEAN HEADER BAR
-         ======================================================================= -->
-    <header class="flex items-center justify-between pb-4 border-b border-[var(--border)]">
-      <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-[var(--border-bright)] flex items-center justify-center text-lg shadow-sm">
+  <!-- =========================================================================
+       2. TOP-LEFT HUD: SYSTEM & REPO TELEMETRY
+       ========================================================================= -->
+  <div class="absolute top-5 left-5 z-20 space-y-2 pointer-events-none">
+    <div class="hud-glass rounded-2xl p-4 w-72 pointer-events-auto shadow-2xl">
+      <div class="flex items-center space-x-3 mb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/30 flex items-center justify-center text-base shadow-inner">
           🐝
         </div>
         <div>
-          <div class="flex items-center space-x-2">
-            <h1 class="text-base font-semibold tracking-tight text-[var(--foreground)]">HiveMesh</h1>
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-[var(--card)] text-zinc-400 border border-[var(--border)] font-mono">v0.3.0</span>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="text-sm font-bold tracking-tight text-white">HiveMesh</h1>
+            <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v0.3.0</span>
           </div>
-          <div class="flex items-center space-x-2 text-xs font-mono text-[var(--muted)] mt-0.5">
-            <span id="proj-name">Loading project...</span>
-            <span>•</span>
-            <span class="text-indigo-400 font-medium" id="proj-branch">main</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex items-center space-x-3">
-        <!-- Live SSE Indicator -->
-        <div class="flex items-center space-x-1.5 text-xs font-mono px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-zinc-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 status-dot" id="live-dot"></span>
-          <span id="live-status">Connected</span>
-        </div>
-
-        <!-- Minimal Palette -->
-        <div class="flex items-center bg-[var(--card)] border border-[var(--border)] rounded-lg p-1 space-x-1">
-          <button onclick="changeTheme('default')" title="Indigo" class="w-3.5 h-3.5 rounded-full bg-indigo-500 hover:ring-2 ring-indigo-400 transition"></button>
-          <button onclick="changeTheme('emerald')" title="Emerald" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:ring-2 ring-emerald-400 transition"></button>
-          <button onclick="changeTheme('oled')" title="OLED Cyan" class="w-3.5 h-3.5 rounded-full bg-sky-400 hover:ring-2 ring-sky-300 transition"></button>
-        </div>
-
-        <button onclick="fetchStatus()" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-[var(--card)] hover:bg-[var(--card-inner)] border border-[var(--border)] text-zinc-300 transition active:scale-95">
-          Refresh
-        </button>
-      </div>
-    </header>
-
-    <!-- =======================================================================
-         2. REAL METRICS STRIP
-         ======================================================================= -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
-        <span class="text-[11px] font-mono text-[var(--muted)] block">Active Swarms</span>
-        <div class="text-xl font-bold mt-1 text-[var(--foreground)]" id="metric-swarms">0</div>
-      </div>
-
-      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
-        <span class="text-[11px] font-mono text-[var(--muted)] block">Isolated Worktrees</span>
-        <div class="text-xl font-bold mt-1 text-emerald-400" id="metric-worktrees">0</div>
-      </div>
-
-      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
-        <span class="text-[11px] font-mono text-[var(--muted)] block">Blackboard Insights</span>
-        <div class="text-xl font-bold mt-1 text-indigo-400" id="metric-insights">0</div>
-      </div>
-
-      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
-        <span class="text-[11px] font-mono text-[var(--muted)] block">Git Commit (HEAD)</span>
-        <div class="text-xl font-bold mt-1 text-zinc-300 font-mono" id="metric-commits">-</div>
-      </div>
-    </div>
-
-    <!-- =======================================================================
-         3. SECTION: ACTIVE SWARMS & WORKTREES (100% REAL)
-         ======================================================================= -->
-    <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xs font-mono uppercase tracking-wider text-[var(--muted)] font-semibold">Active Parallel Swarms</h2>
-        <button onclick="toggleNewSwarmModal()" class="text-xs font-mono text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1">
-          + Launch New Swarm
-        </button>
-      </div>
-
-      <!-- Quick Launch Drawer / Panel -->
-      <div id="new-swarm-box" class="hidden p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
-        <div class="text-xs font-semibold text-[var(--foreground)]">Launch a New Parallel Swarm</div>
-        <div class="space-y-2 text-xs font-mono">
-          <div>
-            <label class="text-[11px] text-[var(--muted)] block mb-1">Task Description</label>
-            <input type="text" id="swarm-task-input" placeholder="e.g. Implement OAuth token refresh with passkeys"
-              class="w-full px-3 py-2 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="text-[11px] text-[var(--muted)] block mb-1">Roles (comma-separated)</label>
-            <input type="text" id="swarm-roles-input" value="backend, frontend, security"
-              class="w-full px-3 py-2 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:border-indigo-500">
+          <div class="text-[11px] text-zinc-400 font-mono mt-0.5 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span id="hud-project">twenty-crm</span>
           </div>
         </div>
-        <div class="flex justify-end space-x-2 pt-1">
-          <button onclick="toggleNewSwarmModal()" class="text-xs font-mono px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--card-inner)] text-[var(--muted)]">Cancel</button>
-          <button onclick="launchRealSwarm()" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Create Swarm & Worktrees</button>
-        </div>
       </div>
 
-      <!-- Swarms Container (populated from /api/status) -->
-      <div id="swarms-container" class="space-y-3">
-        <!-- Rendered dynamically -->
-      </div>
-    </div>
-
-    <!-- =======================================================================
-         4. SECTION: BLACKBOARD KNOWLEDGE (FTS5) (100% REAL)
-         ======================================================================= -->
-    <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xs font-mono uppercase tracking-wider text-[var(--muted)] font-semibold">Shared Blackboard Memory (SQLite FTS5)</h2>
-        <span class="text-[11px] font-mono text-zinc-500">Zero-Token Discovery Bus</span>
-      </div>
-
-      <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
-        <div class="flex items-center gap-2">
-          <input type="text" id="bb-filter" oninput="filterBlackboard()" placeholder="Filter memory (FTS5 BM25)..."
-            class="flex-1 text-xs px-3 py-1.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted)] font-mono focus:outline-none focus:border-indigo-500">
-          
-          <button onclick="toggleAddInsight()" class="text-xs font-mono px-2.5 py-1.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] hover:bg-[var(--border)] text-zinc-300">
-            + Post Insight
-          </button>
+      <div class="border-t border-white/[0.06] pt-2 space-y-1 text-[11px] font-mono text-zinc-400">
+        <div class="flex justify-between">
+          <span class="text-zinc-500">Branch:</span>
+          <span class="text-indigo-300" id="hud-branch">main</span>
         </div>
-
-        <!-- Add Insight Form -->
-        <div id="add-insight-box" class="hidden p-3 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] space-y-2 text-xs font-mono">
-          <div class="grid grid-cols-2 gap-2">
-            <input type="text" id="insight-topic" placeholder="Topic (e.g. auth:jwt)" class="px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-            <input type="text" id="insight-key" placeholder="Key (e.g. session_ttl)" class="px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-          </div>
-          <input type="text" id="insight-value" placeholder="Insight value or architecture discovery..." class="w-full px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-          <div class="flex justify-end gap-2 pt-1">
-            <button onclick="toggleAddInsight()" class="text-[11px] px-2 py-1 rounded text-zinc-400">Cancel</button>
-            <button onclick="postRealInsight()" class="text-[11px] px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Post to SQLite</button>
-          </div>
+        <div class="flex justify-between">
+          <span class="text-zinc-500">Commit:</span>
+          <span class="text-zinc-300" id="hud-commit">#3dc35efb485</span>
         </div>
-
-        <!-- Blackboard Items List -->
-        <div id="blackboard-list" class="space-y-2 text-xs font-mono">
-          <!-- Rendered dynamically -->
+        <div class="flex justify-between">
+          <span class="text-zinc-500">Memory Core:</span>
+          <span class="text-emerald-400">SQLite FTS5 (BM25)</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-zinc-500">AST Bus:</span>
+          <span class="text-emerald-400">TypeScript 5.7</span>
         </div>
       </div>
     </div>
-
-    <!-- =======================================================================
-         5. SECTION: REAL EVENT LOG STREAM
-         ======================================================================= -->
-    <div class="space-y-2">
-      <div class="flex items-center justify-between text-xs font-mono text-[var(--muted)]">
-        <span class="uppercase tracking-wider font-semibold">Live System Events</span>
-        <button onclick="clearLogs()" class="hover:text-[var(--foreground)] transition">Clear</button>
-      </div>
-
-      <div class="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] font-mono text-[11px] h-36 overflow-y-auto space-y-1 text-zinc-300" id="live-log-box">
-        <!-- Real events stream here -->
-      </div>
-    </div>
-
   </div>
 
   <!-- =========================================================================
-       JAVASCRIPT: 100% REAL DATA LOGIC & SSE
+       3. TOP-RIGHT HUD: SWARM STATUS & CONTROLS
+       ========================================================================= -->
+  <div class="absolute top-5 right-5 z-20 space-y-2 text-right pointer-events-none">
+    <div class="hud-glass rounded-2xl p-4 w-72 pointer-events-auto shadow-2xl text-left">
+      <div class="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+        <span class="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Swarm Engine</span>
+        <span id="hud-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
+          ACTIVE (N=4)
+        </span>
+      </div>
+
+      <div class="py-2.5 space-y-1.5 text-xs font-mono">
+        <div class="flex justify-between text-[11px]">
+          <span class="text-zinc-500">Master Core:</span>
+          <span class="text-amber-400 font-semibold">Orchestrator (Center)</span>
+        </div>
+        <div class="flex justify-between text-[11px]">
+          <span class="text-zinc-500">Active Clusters:</span>
+          <span class="text-indigo-400" id="hud-clusters-count">4 Agents</span>
+        </div>
+        <div class="flex justify-between text-[11px]">
+          <span class="text-zinc-500">Steering State:</span>
+          <span class="text-zinc-300" id="hud-steer-state">Autonomous Execution</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="pt-2 border-t border-white/[0.06] flex items-center gap-1.5">
+        <button id="btn-pause-toggle" onclick="togglePauseSwarm()" class="flex-1 text-[11px] font-mono py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition flex items-center justify-center gap-1">
+          <span id="btn-pause-icon">⏸️</span>
+          <span id="btn-pause-text">Pause Swarm</span>
+        </button>
+        <button onclick="cleanCurrentSwarm()" class="text-[11px] font-mono py-1 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 transition">
+          Destroy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       4. BOTTOM-LEFT HERO TITLE (Second Brain / Swarm Mesh aesthetic)
+       ========================================================================= -->
+  <div class="absolute bottom-32 left-8 z-10 pointer-events-none select-none">
+    <div class="text-[11px] font-mono tracking-widest text-indigo-400 uppercase opacity-80">AUTONOMOUS MULTI-AGENT ARCHITECTURE</div>
+    <div class="text-3xl font-extrabold tracking-tight text-white mt-0.5 flex items-center gap-3">
+      <span>Neural Swarm Mesh</span>
+    </div>
+    <p class="text-xs text-zinc-500 font-mono mt-1 max-w-sm">
+      Elastic decomposition & AST verification. Drag to rotate 3D cosmos, scroll to zoom.
+    </p>
+  </div>
+
+  <!-- =========================================================================
+       5. BOTTOM HUMAN COMMAND & CHAT COCKPIT
+       ========================================================================= -->
+  <div class="absolute bottom-5 inset-x-5 md:inset-x-20 max-w-5xl mx-auto z-30">
+    <div class="hud-glass rounded-2xl shadow-2xl p-3 border border-white/[0.12] space-y-2">
+      
+      <!-- Live Orchestrator Speech / Stream Ticker -->
+      <div class="h-14 overflow-y-auto px-3 py-1 font-mono text-[11px] text-zinc-300 space-y-1 border-b border-white/[0.06]" id="chat-stream">
+        <div class="flex items-center space-x-2 text-indigo-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+          <strong>[ORCHESTRATOR]</strong>
+          <span>Ready. Enter your feature prompt below. I will calculate the critical path and spawn parallel agent clusters.</span>
+        </div>
+      </div>
+
+      <!-- Human Input Command Bar -->
+      <form onsubmit="handlePromptSubmit(event)" class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-400 font-mono text-sm">🐝 &gt;</span>
+          <input type="text" id="prompt-input" 
+            placeholder="Tell Orchestrator what to build (e.g. 'Add WebAuthn biometric passkeys with session refresh')..." 
+            class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/60 border border-white/[0.1] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 ring-indigo-500/40 transition">
+        </div>
+
+        <button type="submit" id="btn-submit" class="text-xs font-mono font-semibold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 active:scale-95 shrink-0">
+          <span>Launch Swarm</span>
+          <span>⚡</span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       6. STEERING DRAWER / INSPECTOR PANEL (When human clicks an agent node)
+       ========================================================================= -->
+  <div id="steering-drawer" class="hidden absolute top-5 right-80 z-30 w-80 hud-glass rounded-2xl p-4 shadow-2xl border border-indigo-500/30 space-y-3">
+    <div class="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-400" id="steer-agent-dot"></span>
+        <h3 class="text-xs font-bold font-mono text-white" id="steer-agent-role">auth-guards</h3>
+      </div>
+      <button onclick="closeSteeringDrawer()" class="text-zinc-500 hover:text-white font-mono text-xs">✕</button>
+    </div>
+
+    <div class="space-y-2 text-xs font-mono">
+      <div>
+        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block">Orchestrator Directive</label>
+        <p class="text-zinc-300 text-[11px] mt-0.5 leading-relaxed bg-black/40 p-2 rounded-lg border border-white/[0.04]" id="steer-agent-task">
+          Implement workspace tenancy auth guards and passport authentication handlers
+        </p>
+      </div>
+
+      <div>
+        <label class="text-[10px] text-amber-400 uppercase tracking-wider block font-semibold">Human Steering Intervention</label>
+        <textarea id="steer-input" rows="3" placeholder="Intervene or modify this agent's instruction (e.g. 'Use session cookies instead of JWT')..."
+          class="w-full mt-1 p-2 rounded-lg bg-black/60 border border-white/[0.1] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400/80 transition"></textarea>
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button onclick="sendSteeringCorrection()" class="w-full text-xs font-mono font-semibold py-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 transition flex items-center justify-center gap-1.5 active:scale-95">
+          <span>Broadcast Directive</span>
+          <span>📢</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       7. 3D NEURAL GALAXY ENGINE (HTML5 WEBGL/CANVAS + ORBIT CONTROLS)
        ========================================================================= -->
   <script>
-    // Theme Management
-    function changeTheme(theme) {
-      if (theme === 'default') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
-      localStorage.setItem('hivemesh-theme', theme);
-    }
-    const savedTheme = localStorage.getItem('hivemesh-theme');
-    if (savedTheme) changeTheme(savedTheme);
+    const canvas = document.getElementById('galaxy-canvas');
+    const ctx = canvas.getContext('2d');
 
-    let currentSwarms = [];
-    let currentBlackboard = [];
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    // 3D Camera & Orbit
+    let rotX = 0.25;
+    let rotY = 0;
+    let zoom = 1.0;
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+
+    canvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        rotY += dx * 0.005;
+        rotX += dy * 0.005;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      }
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('wheel', (e) => {
+      zoom += e.deltaY * -0.001;
+      zoom = Math.max(0.5, Math.min(2.5, zoom));
+    });
+
+    // Cosmic Stars Background (200 distant stars)
+    const stars = [];
+    for (let i = 0; i < 220; i++) {
+      stars.push({
+        x: (Math.random() - 0.5) * 2000,
+        y: (Math.random() - 0.5) * 2000,
+        z: (Math.random() - 0.5) * 2000,
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.7 + 0.2
+      });
+    }
+
+    // Default Agents & Constellations
+    let agentClusters = [
+      {
+        role: "auth-guards",
+        label: "API / AUTH",
+        color: "#3b82f6",
+        baseX: -260, baseY: -120, baseZ: 40,
+        task: "Implement workspace tenancy auth guards and passport authentication handlers",
+        particles: []
+      },
+      {
+        role: "token-services",
+        label: "TOKEN SRV",
+        color: "#10b981",
+        baseX: -180, baseY: 140, baseZ: -80,
+        task: "Build token refresh, challenge generation, and session lifecycle services",
+        particles: []
+      },
+      {
+        role: "ui-modals",
+        label: "UI SURFACE",
+        color: "#a855f7",
+        baseX: 240, baseY: -110, baseZ: -40,
+        task: "Create Passkey/OAuth login modals and client-side credential prompts",
+        particles: []
+      },
+      {
+        role: "security-adversary",
+        label: "RED TEAM",
+        color: "#f43f5e",
+        baseX: 220, baseY: 130, baseZ: 60,
+        task: "Execute automated adversarial fuzzing, token replay, and race condition tests",
+        particles: []
+      }
+    ];
+
+    // Seed micro-particles for each cluster (like the uploaded image)
+    function seedClusterParticles() {
+      agentClusters.forEach(cluster => {
+        cluster.particles = [];
+        const count = 70; // dense colorful cluster cloud
+        for (let i = 0; i < count; i++) {
+          const radius = Math.random() * 45;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos((Math.random() * 2) - 1);
+          cluster.particles.push({
+            dx: radius * Math.sin(phi) * Math.cos(theta),
+            dy: radius * Math.sin(phi) * Math.sin(theta),
+            dz: radius * Math.cos(phi),
+            speed: (Math.random() - 0.5) * 0.02,
+            size: Math.random() * 2.2 + 0.8,
+            alpha: Math.random() * 0.7 + 0.3
+          });
+        }
+      });
+    }
+    seedClusterParticles();
+
+    // Central Orchestrator Core Particles
+    const coreParticles = [];
+    for (let i = 0; i < 90; i++) {
+      const radius = Math.random() * 32;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      coreParticles.push({
+        dx: radius * Math.sin(phi) * Math.cos(theta),
+        dy: radius * Math.sin(phi) * Math.sin(theta),
+        dz: radius * Math.cos(phi),
+        speed: (Math.random() - 0.5) * 0.03,
+        size: Math.random() * 2.5 + 1
+      });
+    }
+
+    // 3D Projection Math
+    function project3D(x, y, z) {
+      // Rotate Y (yaw)
+      let cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+      let x1 = x * cosY - z * sinY;
+      let z1 = z * cosY + x * sinY;
+
+      // Rotate X (pitch)
+      let cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+      let y2 = y * cosX - z1 * sinX;
+      let z2 = z1 * cosX + y * sinX;
+
+      // Camera distance & perspective
+      const fov = 600 * zoom;
+      const dist = 700;
+      const scale = fov / (dist + z2);
+
+      return {
+        x: width / 2 + x1 * scale,
+        y: height / 2 + y2 * scale,
+        scale: scale,
+        depth: z2
+      };
+    }
+
+    let time = 0;
+    let hoveredCluster = null;
+    let activeSwarmId = "swarm_01";
+    let isPaused = false;
+
+    // Render Loop (60 FPS)
+    function render() {
+      time += 0.015;
+      ctx.fillStyle = "#030306";
+      ctx.fillRect(0, 0, width, height);
+
+      // 1. Draw Distant Stars
+      stars.forEach(s => {
+        const p = project3D(s.x, s.y, s.z);
+        if (p.depth > -500) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, s.size * p.scale, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha * Math.min(1, p.scale)})`;
+          ctx.fill();
+        }
+      });
+
+      // 2. Central Core: Master Orchestrator (The Cosmic Sun)
+      const coreProj = project3D(0, 0, 0);
+
+      // Radiant Core Aura
+      const coreGlow = ctx.createRadialGradient(coreProj.x, coreProj.y, 0, coreProj.x, coreProj.y, 70 * coreProj.scale);
+      coreGlow.addColorStop(0, "rgba(99, 102, 241, 0.45)");
+      coreGlow.addColorStop(0.5, "rgba(168, 85, 247, 0.2)");
+      coreGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = coreGlow;
+      ctx.beginPath();
+      ctx.arc(coreProj.x, coreProj.y, 70 * coreProj.scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core Micro-Particles
+      coreParticles.forEach(cp => {
+        const rot = time * cp.speed * 20;
+        const cx = cp.dx * Math.cos(rot) - cp.dz * Math.sin(rot);
+        const cz = cp.dz * Math.cos(rot) + cp.dx * Math.sin(rot);
+        const p = project3D(cx, cp.dy, cz);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, cp.size * p.scale, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(224, 231, 255, 0.85)";
+        ctx.fill();
+      });
+
+      // Core Solid Center
+      ctx.beginPath();
+      ctx.arc(coreProj.x, coreProj.y, 18 * coreProj.scale, 0, Math.PI * 2);
+      ctx.fillStyle = "#1e1b4b";
+      ctx.strokeStyle = "#818cf8";
+      ctx.lineWidth = 2 * coreProj.scale;
+      ctx.fill();
+      ctx.stroke();
+
+      // Core Crown Emoji / Icon
+      ctx.font = `${Math.round(11 * coreProj.scale)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("👑", coreProj.x, coreProj.y);
+
+      // Core Label
+      ctx.font = `bold ${Math.round(9 * coreProj.scale)}px monospace`;
+      ctx.fillStyle = "#c7d2fe";
+      ctx.fillText("MASTER ORCHESTRATOR", coreProj.x, coreProj.y + 28 * coreProj.scale);
+
+      // 3. Draw Orbiting Agent Constellations & Connectors
+      agentClusters.forEach((cluster, idx) => {
+        // Slow natural cosmic orbital drift
+        const orbitSpeed = 0.2 + idx * 0.05;
+        const driftAngle = time * 0.3 * (idx % 2 === 0 ? 1 : -1);
+        const curX = cluster.baseX * Math.cos(driftAngle * 0.1) - cluster.baseZ * Math.sin(driftAngle * 0.1);
+        const curZ = cluster.baseZ * Math.cos(driftAngle * 0.1) + cluster.baseX * Math.sin(driftAngle * 0.1);
+        const curY = cluster.baseY;
+
+        const clusterProj = project3D(curX, curY, curZ);
+        cluster._screenX = clusterProj.x;
+        cluster._screenY = clusterProj.y;
+        cluster._radius = 35 * clusterProj.scale;
+
+        // Laser Synapse Line (Center -> Agent)
+        ctx.beginPath();
+        ctx.moveTo(coreProj.x, coreProj.y);
+        ctx.lineTo(clusterProj.x, clusterProj.y);
+        ctx.strokeStyle = cluster.color;
+        ctx.lineWidth = 1 * clusterProj.scale;
+        ctx.globalAlpha = 0.35;
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+
+        // Traveling Photon Pulses along the line
+        const packetProgress = (time * 1.5 + idx * 0.25) % 1.0;
+        const pulseX = coreProj.x + (clusterProj.x - coreProj.x) * packetProgress;
+        const pulseY = coreProj.y + (clusterProj.y - coreProj.y) * packetProgress;
+        ctx.beginPath();
+        ctx.arc(pulseX, pulseY, 2.5 * clusterProj.scale, 0, Math.PI * 2);
+        ctx.fillStyle = cluster.color;
+        ctx.fill();
+
+        // Cluster Dense Particle Cloud (Like the image!)
+        cluster.particles.forEach(pt => {
+          const pRot = time * pt.speed * 15;
+          const px = curX + pt.dx * Math.cos(pRot) - pt.dz * Math.sin(pRot);
+          const pz = curZ + pt.dz * Math.cos(pRot) + pt.dx * Math.sin(pRot);
+          const py = curY + pt.dy;
+          const p = project3D(px, py, pz);
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pt.size * p.scale, 0, Math.PI * 2);
+          ctx.fillStyle = cluster.color;
+          ctx.globalAlpha = pt.alpha * Math.min(1, p.scale);
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        });
+
+        // Agent Core Center
+        ctx.beginPath();
+        ctx.arc(clusterProj.x, clusterProj.y, 10 * clusterProj.scale, 0, Math.PI * 2);
+        ctx.fillStyle = "#09090b";
+        ctx.strokeStyle = cluster.color;
+        ctx.lineWidth = 2 * clusterProj.scale;
+        ctx.fill();
+        ctx.stroke();
+
+        // Outer Glow Ring
+        ctx.beginPath();
+        ctx.arc(clusterProj.x, clusterProj.y, 16 * clusterProj.scale, 0, Math.PI * 2);
+        ctx.strokeStyle = cluster.color;
+        ctx.lineWidth = 0.7 * clusterProj.scale;
+        ctx.globalAlpha = 0.4;
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+
+        // Floating Callout Label (HUD style with line like image)
+        const isHovered = hoveredCluster === cluster;
+        ctx.font = `bold ${Math.round((isHovered ? 11 : 9.5) * clusterProj.scale)}px monospace`;
+        ctx.fillStyle = isHovered ? "#ffffff" : cluster.color;
+        ctx.textAlign = "center";
+        ctx.fillText(`[${cluster.role}]`, clusterProj.x, clusterProj.y - 20 * clusterProj.scale);
+
+        // Status Tag
+        ctx.font = `${Math.round(8 * clusterProj.scale)}px monospace`;
+        ctx.fillStyle = "#a1a1aa";
+        ctx.fillText(cluster.label, clusterProj.x, clusterProj.y + 22 * clusterProj.scale);
+      });
+
+      requestAnimationFrame(render);
+    }
+    render();
+
+    // Canvas Hover & Click Detection
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      hoveredCluster = null;
+      for (const c of agentClusters) {
+        if (c._screenX !== undefined) {
+          const dist = Math.hypot(mouseX - c._screenX, mouseY - c._screenY);
+          if (dist < c._radius + 10) {
+            hoveredCluster = c;
+            canvas.style.cursor = 'pointer';
+            return;
+          }
+        }
+      }
+      canvas.style.cursor = isDragging ? 'grabbing' : 'grab';
+    });
+
+    canvas.addEventListener('click', (e) => {
+      if (hoveredCluster) {
+        openSteeringDrawer(hoveredCluster);
+      }
+    });
+
+    // =========================================================================
+    // 8. HUMAN COMMAND BAR & STEERING INTERACTION
+    // =========================================================================
+    let selectedAgentForSteer = null;
+
+    function openSteeringDrawer(agent) {
+      selectedAgentForSteer = agent;
+      document.getElementById('steering-drawer').classList.remove('hidden');
+      document.getElementById('steer-agent-role').innerText = agent.role;
+      document.getElementById('steer-agent-task').innerText = agent.task;
+      document.getElementById('steer-agent-dot').style.backgroundColor = agent.color;
+      document.getElementById('steer-input').value = '';
+      document.getElementById('steer-input').focus();
+      addLog("INSPECTOR", `Selected agent node: [${agent.role}]. Enter steering directives if needed.`, agent.color);
+    }
+
+    function closeSteeringDrawer() {
+      document.getElementById('steering-drawer').classList.add('hidden');
+      selectedAgentForSteer = null;
+    }
+
+    async function sendSteeringCorrection() {
+      if (!selectedAgentForSteer) return;
+      const feedback = document.getElementById('steer-input').value.trim();
+      if (!feedback) {
+        alert("Please enter a steering correction or instruction");
+        return;
+      }
+
+      addLog("HUMAN-INTERVENTION", `Intervening on [${selectedAgentForSteer.role}]: "${feedback}"`, "#f59e0b");
+
+      try {
+        const res = await fetch('/api/swarm/steer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            swarmId: activeSwarmId,
+            role: selectedAgentForSteer.role,
+            feedback: feedback
+          })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        // Update local agent task
+        selectedAgentForSteer.task = feedback;
+        addLog("ORCHESTRATOR", `Directive acknowledged. Contract for [${selectedAgentForSteer.role}] updated & saved to SQLite blackboard.`, "#10b981");
+        closeSteeringDrawer();
+      } catch (err) {
+        addLog("ERROR", "Failed to steer agent: " + err.message, "#f43f5e");
+      }
+    }
+
+    async function togglePauseSwarm() {
+      isPaused = !isPaused;
+      const btnText = document.getElementById('btn-pause-text');
+      const btnIcon = document.getElementById('btn-pause-icon');
+      const hudState = document.getElementById('hud-steer-state');
+      const hudBadge = document.getElementById('hud-status-badge');
+
+      if (isPaused) {
+        btnText.innerText = "Resume Swarm";
+        btnIcon.innerText = "▶️";
+        hudState.innerText = "Paused for Human Review";
+        hudState.className = "text-amber-400 font-bold";
+        hudBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1";
+        hudBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> PAUSED`;
+        addLog("HUMAN", "Swarm execution paused. Click any agent node in the 3D galaxy to steer instructions.", "#f59e0b");
+        await fetch('/api/swarm/pause', { method: 'POST' }).catch(() => {});
+      } else {
+        btnText.innerText = "Pause Swarm";
+        btnIcon.innerText = "⏸️";
+        hudState.innerText = "Autonomous Execution";
+        hudState.className = "text-zinc-300";
+        hudBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1";
+        hudBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span> ACTIVE`;
+        addLog("ORCHESTRATOR", "Swarm resumed with updated architectural directives.", "#10b981");
+        await fetch('/api/swarm/resume', { method: 'POST' }).catch(() => {});
+      }
+    }
+
+    async function handlePromptSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('prompt-input');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+
+      addLog("USER", prompt, "#ffffff");
+      input.value = '';
+
+      addLog("ORCHESTRATOR", `Analyzing prompt: "${prompt}". Calculating critical path...`, "#818cf8");
+
+      try {
+        const res = await fetch('/api/swarm/orchestrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        activeSwarmId = data.swarm.id;
+
+        // Dynamically update the 3D Agent Clusters based on Orchestrator response!
+        if (data.roles && data.roles.length > 0) {
+          const colors = ["#3b82f6", "#a855f7", "#10b981", "#f43f5e", "#f59e0b", "#06b6d4"];
+          const radius = 260;
+          agentClusters = data.roles.map((role, i) => {
+            const angle = (i / data.roles.length) * Math.PI * 2;
+            return {
+              role: role,
+              label: role.toUpperCase(),
+              color: colors[i % colors.length],
+              baseX: Math.cos(angle) * radius,
+              baseY: Math.sin(angle) * (radius * 0.55),
+              baseZ: (Math.random() - 0.5) * 120,
+              task: (data.plan && data.plan[role]) || `Execute domain responsibilities for ${role}`,
+              particles: []
+            };
+          });
+          seedClusterParticles();
+          document.getElementById('hud-clusters-count').innerText = `${agentClusters.length} Agents`;
+        }
+
+        addLog("ORCHESTRATOR", `Swarm ${data.swarm.id} spawned with ${data.roles.length} agents in isolated Git worktrees. Execution started.`, "#10b981");
+      } catch (err) {
+        addLog("ERROR", "Failed to orchestrate: " + err.message, "#f43f5e");
+      }
+    }
 
     function addLog(source, message, color = "#9ca3af") {
-      const box = document.getElementById('live-log-box');
-      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      const stream = document.getElementById('chat-stream');
       const row = document.createElement('div');
       row.className = "flex items-start space-x-2";
       row.innerHTML = `
-        <span class="text-zinc-500 shrink-0">${time}</span>
-        <span class="shrink-0 font-semibold" style="color: ${color};">[${source}]</span>
-        <span class="break-all">${escapeHtml(message)}</span>
+        <span class="shrink-0 font-bold font-mono" style="color: ${color};">[${source}]</span>
+        <span class="break-words font-mono text-[11px] text-zinc-300">${escapeHtml(message)}</span>
       `;
-      box.appendChild(row);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function clearLogs() {
-      document.getElementById('live-log-box').innerHTML = '';
-      addLog("SYSTEM", "Log buffer cleared", "#10b981");
+      stream.appendChild(row);
+      stream.scrollTop = stream.scrollHeight;
     }
 
     function escapeHtml(str) {
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // Fetch 100% Real Status
-    async function fetchStatus() {
+    async function cleanCurrentSwarm() {
+      if (!confirm(`Destroy worktrees and branches for active swarm?`)) return;
       try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        // 1. Project Info
-        document.getElementById('proj-name').innerText = data.project.name;
-        document.getElementById('proj-branch').innerText = data.project.branch;
-        document.getElementById('metric-commits').innerText = data.project.commit ? '#' + data.project.commit : '-';
-
-        // 2. Metrics
-        currentSwarms = data.swarms || [];
-        document.getElementById('metric-swarms').innerText = currentSwarms.length;
-        document.getElementById('metric-worktrees').innerText = data.totalWorktrees || 0;
-
-        currentBlackboard = (data.blackboard && data.blackboard.entries) || [];
-        document.getElementById('metric-insights').innerText = currentBlackboard.length;
-
-        // 3. Render Swarms
-        renderSwarms(currentSwarms);
-
-        // 4. Render Blackboard
-        renderBlackboard(currentBlackboard);
-
-      } catch (err) {
-        addLog("ERROR", "Failed to fetch status: " + err.message, "#f43f5e");
-      }
-    }
-
-    // Render Swarms
-    function renderSwarms(swarms) {
-      const container = document.getElementById('swarms-container');
-      if (swarms.length === 0) {
-        container.innerHTML = `
-          <div class="p-6 rounded-xl bg-[var(--card)] border border-[var(--border)] text-center space-y-2">
-            <div class="text-2xl">🐝</div>
-            <div class="text-xs font-semibold text-[var(--foreground)]">No active swarms</div>
-            <p class="text-xs text-[var(--muted)] font-mono max-w-sm mx-auto">
-              No isolated worktrees are currently active. Run <code class="text-indigo-400">npx hivemesh run "&lt;task&gt;"</code> or click "+ Launch New Swarm" above.
-            </p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = swarms.map(s => {
-        const date = new Date(s.createdAt).toLocaleTimeString();
-        return `
-          <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
-            <div class="flex items-center justify-between pb-2 border-b border-[var(--border)] text-xs font-mono">
-              <div class="flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span class="font-bold text-[var(--foreground)]">${escapeHtml(s.id)}</span>
-                <span class="text-zinc-500">created at ${date}</span>
-              </div>
-              <button onclick="cleanRealSwarm('${escapeHtml(s.id)}')" class="text-rose-400 hover:text-rose-300 font-mono transition text-[11px] px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
-                Destroy Worktrees
-              </button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-              ${s.worktrees.map(wt => `
-                <div class="p-2.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-xs font-mono space-y-1">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-indigo-400 uppercase text-[11px]">${escapeHtml(wt.role)}</span>
-                    <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">${escapeHtml(wt.status)}</span>
-                  </div>
-                  <div class="text-[11px] text-zinc-300 truncate" title="${escapeHtml(wt.branch)}">🌿 ${escapeHtml(wt.branch)}</div>
-                  <div class="text-[10px] text-zinc-500 truncate" title="${escapeHtml(wt.path)}">📁 ${escapeHtml(wt.path)}</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Render Blackboard
-    function renderBlackboard(entries) {
-      const list = document.getElementById('blackboard-list');
-      if (entries.length === 0) {
-        list.innerHTML = `
-          <div class="p-4 text-center text-xs text-[var(--muted)] font-mono">
-            No knowledge entries posted yet. Parallel agents will automatically index architectural patterns here.
-          </div>
-        `;
-        return;
-      }
-
-      list.innerHTML = entries.map(e => `
-        <div class="p-2.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] flex justify-between items-start">
-          <div class="space-y-0.5">
-            <div class="flex items-center space-x-2">
-              <span class="text-indigo-400 font-bold text-[11px]">[${escapeHtml(e.topic)}]</span>
-              <span class="text-zinc-400 text-[11px] font-semibold">${escapeHtml(e.key)}</span>
-            </div>
-            <p class="text-zinc-200 text-xs">${escapeHtml(e.value)}</p>
-          </div>
-          <span class="text-[10px] text-zinc-500 shrink-0 ml-2 font-mono">${escapeHtml(e.agentId)}</span>
-        </div>
-      `).join('');
-    }
-
-    function filterBlackboard() {
-      const q = document.getElementById('bb-filter').value.toLowerCase();
-      const filtered = currentBlackboard.filter(e => 
-        e.topic.toLowerCase().includes(q) || 
-        e.key.toLowerCase().includes(q) || 
-        e.value.toLowerCase().includes(q)
-      );
-      renderBlackboard(filtered);
-    }
-
-    function toggleNewSwarmModal() {
-      const el = document.getElementById('new-swarm-box');
-      el.classList.toggle('hidden');
-    }
-
-    function toggleAddInsight() {
-      const el = document.getElementById('add-insight-box');
-      el.classList.toggle('hidden');
-    }
-
-    // Real API Calls
-    async function launchRealSwarm() {
-      const task = document.getElementById('swarm-task-input').value.trim();
-      const rolesInput = document.getElementById('swarm-roles-input').value.trim();
-      const roles = rolesInput ? rolesInput.split(',').map(r => r.trim()).filter(Boolean) : [];
-
-      if (!task) {
-        alert("Please enter a task description");
-        return;
-      }
-
-      addLog("SWARM", `Creating parallel swarm with roles: ${roles.join(', ')}...`, "#6366f1");
-      toggleNewSwarmModal();
-
-      try {
-        const res = await fetch('/api/swarm/create', {
+        await fetch('/api/swarm/clean', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task, roles })
+          body: JSON.stringify({ swarmId: activeSwarmId })
         });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        addLog("SWARM", `Swarm created successfully: ${data.swarm.id} (${data.swarm.worktrees.length} isolated worktrees)`, "#10b981");
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", "Failed to launch swarm: " + err.message, "#f43f5e");
+        addLog("ORCHESTRATOR", "Active swarm destroyed and worktrees pruned from disk.", "#f43f5e");
+      } catch (e) {
+        addLog("ERROR", "Clean failed: " + e.message, "#f43f5e");
       }
     }
 
-    async function cleanRealSwarm(swarmId) {
-      if (!confirm(`Are you sure you want to clean worktrees for ${swarmId}?`)) return;
-      addLog("SWARM", `Destroying worktrees for swarm ${swarmId}...`, "#f43f5e");
-
-      try {
-        const res = await fetch('/api/swarm/clean', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ swarmId })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        addLog("SWARM", `Worktrees destroyed for ${swarmId}`, "#10b981");
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", "Failed to clean swarm: " + err.message, "#f43f5e");
-      }
-    }
-
-    async function postRealInsight() {
-      const topic = document.getElementById('insight-topic').value.trim();
-      const key = document.getElementById('insight-key').value.trim();
-      const value = document.getElementById('insight-value').value.trim();
-
-      if (!topic || !key || !value) {
-        alert("Please fill all insight fields");
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/blackboard/post', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, key, value, agentId: "operator" })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        addLog("BLACKBOARD", `Indexed real insight [${topic}]: ${key}`, "#10b981");
-        document.getElementById('insight-topic').value = '';
-        document.getElementById('insight-key').value = '';
-        document.getElementById('insight-value').value = '';
-        toggleAddInsight();
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", "Failed to post insight: " + err.message, "#f43f5e");
-      }
-    }
-
-    // Connect to SSE
+    // Connect to SSE for Live Updates
     function initSSE() {
       if (window.location.protocol.startsWith('http')) {
         const evt = new EventSource('/events');
-        evt.onopen = () => {
-          document.getElementById('live-status').innerText = 'Connected';
-          document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-emerald-400 status-dot';
-          addLog("ENGINE", "Connected to HiveMesh SSE Event Bus", "#10b981");
-        };
-        evt.onerror = () => {
-          document.getElementById('live-status').innerText = 'Offline';
-          document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-rose-500';
-        };
         evt.onmessage = (e) => {
           try {
             const data = JSON.parse(e.data);
             if (data.message) addLog("ENGINE", data.message, "#38bdf8");
           } catch {}
         };
-        evt.addEventListener('swarm_created', () => { fetchStatus(); });
-        evt.addEventListener('swarm_cleaned', () => { fetchStatus(); });
-        evt.addEventListener('blackboard_posted', () => { fetchStatus(); });
+        evt.addEventListener('agent_steered', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            addLog("BROADCAST", data.message, "#f59e0b");
+          } catch {}
+        });
       }
     }
 
-    // Startup
-    fetchStatus();
+    // Load initial project status
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        if (data.project) {
+          document.getElementById('hud-project').innerText = data.project.name;
+          document.getElementById('hud-branch').innerText = data.project.branch;
+          document.getElementById('hud-commit').innerText = '#' + (data.project.commit || 'main');
+        }
+      } catch {}
+    }
+
+    loadStatus();
     initSSE();
   </script>
 </body>
