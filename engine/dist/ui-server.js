@@ -18,6 +18,8 @@ let clientIdCounter = 0;
 let isSwarmPaused = false;
 let currentSwarmPlan = {};
 let currentSessionTitle = "Autonomous Swarm & Agensi Skill Launch";
+let currentSwarmPrompt = "";
+let orchestratorPhase = "idle";
 export function broadcastEvent(event, data) {
     const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of clients) {
@@ -175,6 +177,9 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     for (const s of swarms) {
                         totalWorktrees += s.worktrees.length;
                     }
+                    if (swarms.length > 0 && orchestratorPhase === "idle") {
+                        orchestratorPhase = "orchestrating";
+                    }
                     res.writeHead(200, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({
                         success: true,
@@ -187,6 +192,8 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                         session: {
                             title: currentSessionTitle,
                         },
+                        orchestratorPhase,
+                        prompt: currentSwarmPrompt || currentSessionTitle,
                         swarms,
                         totalWorktrees,
                         isPaused: isSwarmPaused,
@@ -252,6 +259,8 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     const { roles, plan } = inferDynamicRoles(prompt);
                     currentSwarmPlan = plan;
                     const baseBranch = body.baseBranch || getGitBranch(targetDir);
+                    currentSwarmPrompt = prompt;
+                    orchestratorPhase = "analyzing";
                     broadcastEvent("orchestrator_thinking", {
                         prompt,
                         roles,
@@ -260,9 +269,10 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     });
                     const swarm = createSwarm(targetDir, roles, baseBranch);
                     blackboard.post("architecture:plan", "initial_decomposition", JSON.stringify(plan), "orchestrator");
-                    broadcastEvent("swarm_created", { swarm, plan, roles });
+                    orchestratorPhase = "orchestrating";
+                    broadcastEvent("swarm_created", { swarm, plan, roles, prompt });
                     res.writeHead(200, { "Content-Type": "application/json" });
-                    res.end(JSON.stringify({ success: true, swarm, plan, roles }));
+                    res.end(JSON.stringify({ success: true, swarm, plan, roles, prompt }));
                 }
                 catch (err) {
                     res.writeHead(500, { "Content-Type": "application/json" });
@@ -334,6 +344,8 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     }
                     const result = destroySwarm(swarmId);
                     currentSwarmPlan = {};
+                    currentSwarmPrompt = "";
+                    orchestratorPhase = "idle";
                     broadcastEvent("swarm_cleaned", { swarmId, result });
                     res.writeHead(200, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({ success: true, result }));
