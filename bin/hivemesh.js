@@ -37,6 +37,7 @@ Commands:
   run "<task>" [options]     Create a swarm and plan parallel worktree execution
   status                     List active swarms and worktrees
   clean [swarmId]            Destroy worktrees and branches for a swarm
+  ui [--port <port>]         Start interactive Mission Control Live UI in browser
   --version, -v              Print version
   --help, -h                 Print this help message
 
@@ -199,6 +200,22 @@ async function handleClean() {
   }
 }
 
+async function handleUi() {
+  printBanner();
+  const portIndex = args.indexOf("--port");
+  const port = portIndex !== -1 && args[portIndex + 1] ? parseInt(args[portIndex + 1], 10) : 4242;
+  const autoOpen = !args.includes("--no-open");
+
+  try {
+    const { startUiServer } = await import("../engine/dist/ui-server.js");
+    await startUiServer(port, autoOpen);
+    console.log("Press Ctrl+C to stop the UI server.");
+  } catch (e) {
+    console.error("Failed to start UI server:", e);
+    process.exit(1);
+  }
+}
+
 async function main() {
   if (!command || command === "--help" || command === "-h") {
     printHelp();
@@ -222,6 +239,10 @@ async function main() {
       break;
     case "clean":
       await handleClean();
+      break;
+    case "ui":
+    case "dashboard":
+      await handleUi();
       break;
     default:
       console.error(`Unknown command: ${command}. Run 'hivemesh --help' for usage.`);
