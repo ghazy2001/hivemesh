@@ -22,52 +22,47 @@ let currentSwarmPrompt = "";
 let orchestratorPhase = "idle";
 let agentActivities = {};
 let pinnedConversationId = null;
+const hiveMeshConvCache = new Map();
+function isHiveMeshTranscript(id, tPath, mtime) {
+    const cached = hiveMeshConvCache.get(id);
+    if (cached && cached.mtime === mtime) {
+        return cached.isHive;
+    }
+    try {
+        const content = fs.readFileSync(tPath, "utf-8");
+        const isHive = /plugins[\\/]hivemesh|hivemesh_|hive-(orchestrator|builder|adversary|critic)|twenty-crm-hivemesh-swarm|D:[\\/]hivemesh|hivemesh\.js|HiveMesh Engine Builder|HiveMesh Skill and Agent Writer/i.test(content);
+        hiveMeshConvCache.set(id, { mtime, isHive });
+        return isHive;
+    }
+    catch {
+        hiveMeshConvCache.set(id, { mtime, isHive: false });
+        return false;
+    }
+}
 export function getAntigravityBrainState(selectedId) {
     const brainDir = path.join(process.env.USERPROFILE || "C:\\Users\\mahmo", ".gemini", "antigravity", "brain");
     if (!fs.existsSync(brainDir))
         return null;
     try {
-        const rawConvs = fs.readdirSync(brainDir, { withFileTypes: true })
+        const convs = fs.readdirSync(brainDir, { withFileTypes: true })
             .filter((d) => d.isDirectory() && d.name !== "tempmediaStorage")
             .map((d) => {
             const tPath = path.join(brainDir, d.name, ".system_generated", "logs", "transcript.jsonl");
             let mtime = 0;
-            let isHiveMesh = false;
-            let hasUserInput = false;
-            let preview = "";
             if (fs.existsSync(tPath)) {
                 try {
-                    const stat = fs.statSync(tPath);
-                    mtime = stat.mtimeMs;
-                    const content = fs.readFileSync(tPath, "utf-8");
-                    isHiveMesh = content.toLowerCase().includes("hivemesh") ||
-                        content.includes("hive-orchestrator") ||
-                        content.includes("hive-builder") ||
-                        content.includes("hive-adversary") ||
-                        content.includes("hive-critic") ||
-                        content.includes("twenty-crm-hivemesh");
-                    hasUserInput = content.includes('"type":"USER_INPUT"');
-                    const m = content.match(/<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/);
-                    if (m) {
-                        preview = m[1].replace(/[\r\n\t]+/g, " ").trim().slice(0, 35);
-                    }
+                    mtime = fs.statSync(tPath).mtimeMs;
                 }
                 catch { }
             }
-            return { id: d.name, mtime, tPath, isHiveMesh, hasUserInput, preview };
+            return { id: d.name, mtime, tPath };
         })
-            .filter((c) => c.mtime > 0);
-        // Only include conversations where our HiveMesh plugin is actively used & has user chat interaction
-        let convs = rawConvs
-            .filter((c) => c.isHiveMesh && c.hasUserInput)
+            .filter((c) => c.mtime > 0 && isHiveMeshTranscript(c.id, c.tPath, c.mtime))
             .sort((a, b) => b.mtime - a.mtime);
-        if (convs.length === 0) {
-            convs = rawConvs.sort((a, b) => b.mtime - a.mtime);
-        }
         if (convs.length === 0)
             return null;
         const chosenId = selectedId || pinnedConversationId;
-        const target = chosenId ? (convs.find((c) => c.id === chosenId) || rawConvs.find((c) => c.id === chosenId) || convs[0]) : convs[0];
+        const target = chosenId ? (convs.find((c) => c.id === chosenId) || convs[0]) : convs[0];
         const lines = fs.readFileSync(target.tPath, "utf-8").trim().split("\n");
         let prompt = "";
         const operations = [];
@@ -287,7 +282,7 @@ export function getAntigravityBrainState(selectedId) {
         }
         return {
             activeId: target.id,
-            allConvs: convs.slice(0, 8).map((c) => ({ id: c.id, mtime: c.mtime, preview: c.preview })),
+            allConvs: convs.slice(0, 8).map((c) => ({ id: c.id, mtime: c.mtime })),
             prompt,
             recentOps: operations.slice(-50),
             subagents,

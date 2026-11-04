@@ -8,7 +8,6 @@ import * as http from "http";
 export interface BrainConversation {
     id: string;
     mtime: number;
-    preview?: string;
 }
 export interface BrainOperation {
     id: string;
