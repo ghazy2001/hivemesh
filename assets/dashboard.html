@@ -465,10 +465,11 @@
         const activeClass = isCurrent
           ? "bg-indigo-600 text-white font-bold border-indigo-400 shadow"
           : "bg-black/40 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700";
+        const tooltip = c.preview ? `#${shortId}: "${c.preview}"` : `#${c.id}`;
 
         return `
-          <button onclick="selectConversation('${c.id}')" class="px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer flex items-center gap-1 ${activeClass}">
-            ${isCurrent ? '<span class="w-1 h-1 rounded-full bg-emerald-400"></span>' : ''}
+          <button onclick="selectConversation('${c.id}')" title="${escapeHtml(tooltip)}" class="px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer flex items-center gap-1.5 ${activeClass}">
+            ${isCurrent ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring shrink-0"></span>' : ''}
             <span>#${shortId}</span>
           </button>
         `;
