@@ -518,7 +518,18 @@
         const opsHash = brain.recentOps.map(op => op.id + ':' + op.stepIndex + ':' + op.label).join(';') + '|' + Array.from(expandedOpIds).sort().join(',');
         if (opsHash !== lastRenderedOpsHash) {
           lastRenderedOpsHash = opsHash;
-          list.innerHTML = brain.recentOps.map(op => {
+          if (brain.recentOps.length === 0) {
+            list.innerHTML = `
+              <div class="p-4 rounded-xl bg-black/40 border border-zinc-800/80 text-center space-y-2 mt-2">
+                <div class="flex items-center justify-center gap-2 text-indigo-400 text-xs">
+                  <span class="w-2 h-2 rounded-full bg-indigo-400 status-ring"></span>
+                  <span class="font-bold">جاري استقبال وتنفيذ الأمر الجديد...</span>
+                </div>
+                <div class="text-[10px] text-zinc-500 leading-relaxed">تمت أرشفة عمليات الأمر السابق بنجاح. العمليات الحالية الخاصة بهذا البرومبت تظهر هنا لحظياً فور تنفيذها.</div>
+              </div>
+            `;
+          } else {
+            list.innerHTML = brain.recentOps.map(op => {
             const isExpanded = expandedOpIds.has(op.id);
             const badgeClass = getToolBadgeClass(op.tool);
             return `
@@ -555,12 +566,13 @@
               </div>
             `;
           }).join('');
+          }
         }
       }
 
       const totalCount = document.getElementById('ops-total-count');
       if (totalCount && brain.recentOps) {
-        const text = `${brain.recentOps.length} Recent Operations`;
+        const text = `${brain.recentOps.length} Active Tool(s) Run`;
         if (totalCount.innerText !== text) totalCount.innerText = text;
       }
     }

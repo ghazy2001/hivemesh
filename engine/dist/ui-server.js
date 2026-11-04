@@ -125,7 +125,7 @@ export function getAntigravityBrainState(selectedId) {
         const target = chosenId ? (convs.find((c) => c.id === chosenId) || convs[0]) : convs[0];
         const lines = fs.readFileSync(target.tPath, "utf-8").trim().split("\n");
         let prompt = "";
-        const operations = [];
+        let operations = [];
         const subagentsMap = new Map();
         const cleanArgVal = (val) => {
             if (typeof val === "string") {
@@ -143,6 +143,7 @@ export function getAntigravityBrainState(selectedId) {
                 if (step.type === "USER_INPUT" && step.content) {
                     const m = step.content.match(/<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/);
                     prompt = m ? m[1].trim() : step.content.trim();
+                    operations = []; // Reset operations list when a new prompt arrives so completed operations from past prompts are cleared
                 }
                 if (step.tool_calls && Array.isArray(step.tool_calls)) {
                     // Look ahead up to 4 lines for execution output
