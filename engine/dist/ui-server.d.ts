@@ -5,6 +5,37 @@
  * Powers the real-time Orchestrator command deck and human-in-the-loop steering.
  */
 import * as http from "http";
+export interface BrainConversation {
+    id: string;
+    mtime: number;
+}
+export interface BrainOperation {
+    tool: string;
+    summary: string;
+    label: string;
+    stepIndex: number;
+}
+export interface BrainSubagent {
+    id?: string;
+    role: string;
+    type: string;
+    prompt: string;
+    action: string;
+    status: string;
+}
+export interface BrainState {
+    activeId: string;
+    allConvs: BrainConversation[];
+    prompt: string;
+    recentOps: BrainOperation[];
+    subagents: BrainSubagent[];
+    activeTasks: Array<{
+        taskId: string;
+        updatedAt: number;
+        status: string;
+    }>;
+}
+export declare function getAntigravityBrainState(selectedId?: string): BrainState | null;
 export declare function broadcastEvent(event: string, data: any): void;
 export declare function inferDynamicRoles(prompt: string): {
     roles: string[];

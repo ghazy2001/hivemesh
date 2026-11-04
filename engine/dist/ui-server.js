@@ -21,6 +21,143 @@ let currentSessionTitle = "Autonomous Swarm & Agensi Skill Launch";
 let currentSwarmPrompt = "";
 let orchestratorPhase = "idle";
 let agentActivities = {};
+let pinnedConversationId = null;
+export function getAntigravityBrainState(selectedId) {
+    const brainDir = path.join(process.env.USERPROFILE || "C:\\Users\\mahmo", ".gemini", "antigravity", "brain");
+    if (!fs.existsSync(brainDir))
+        return null;
+    try {
+        const convs = fs.readdirSync(brainDir, { withFileTypes: true })
+            .filter((d) => d.isDirectory() && d.name !== "tempmediaStorage")
+            .map((d) => {
+            const tPath = path.join(brainDir, d.name, ".system_generated", "logs", "transcript.jsonl");
+            let mtime = 0;
+            if (fs.existsSync(tPath)) {
+                try {
+                    mtime = fs.statSync(tPath).mtimeMs;
+                }
+                catch { }
+            }
+            return { id: d.name, mtime, tPath };
+        })
+            .filter((c) => c.mtime > 0)
+            .sort((a, b) => b.mtime - a.mtime);
+        if (convs.length === 0)
+            return null;
+        const chosenId = selectedId || pinnedConversationId;
+        const target = chosenId ? (convs.find((c) => c.id === chosenId) || convs[0]) : convs[0];
+        const lines = fs.readFileSync(target.tPath, "utf-8").trim().split("\n");
+        let prompt = "";
+        const operations = [];
+        const subagentsMap = new Map();
+        for (const line of lines) {
+            try {
+                const step = JSON.parse(line);
+                if (step.type === "USER_INPUT" && step.content) {
+                    const m = step.content.match(/<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/);
+                    prompt = m ? m[1].trim() : step.content.trim();
+                }
+                if (step.tool_calls && Array.isArray(step.tool_calls)) {
+                    for (const tc of step.tool_calls) {
+                        const summary = (tc.args && (tc.args.toolSummary || tc.args.Summary)) || tc.name;
+                        const cleanSummary = String(summary).replace(/^"|"$/g, "");
+                        let label = `Ran ${cleanSummary}`;
+                        if (tc.name === "manage_task") {
+                            label = `Checked task ${cleanSummary}`;
+                        }
+                        else if (tc.name === "invoke_subagent" && tc.args) {
+                            const role = String(tc.args.Role || "Subagent").replace(/^"|"$/g, "");
+                            const type = String(tc.args.TypeName || "subagent").replace(/^"|"$/g, "");
+                            label = `Launched Subagent: ${role}`;
+                            subagentsMap.set(role, {
+                                role,
+                                type,
+                                prompt: String(tc.args.Prompt || "").replace(/^"|"$/g, "").slice(0, 100),
+                                action: "Operating in isolated workspace",
+                                status: "ACTIVE"
+                            });
+                        }
+                        else if (tc.name === "read_file") {
+                            label = `Read ${path.basename(cleanSummary.replace(/\\/g, "/"))}`;
+                        }
+                        else if (tc.name === "edit_file" || tc.name === "write_file") {
+                            label = `Updated ${path.basename(cleanSummary.replace(/\\/g, "/"))}`;
+                        }
+                        operations.push({
+                            tool: tc.name,
+                            summary: cleanSummary,
+                            label,
+                            stepIndex: step.step_index
+                        });
+                    }
+                }
+                if (step.content && typeof step.content === "string" && step.content.includes("Created the following subagent:")) {
+                    const m = step.content.match(/"conversationId":\s*"([^"]+)"/);
+                    if (m) {
+                        const subId = m[1];
+                        for (const [_, sa] of subagentsMap.entries()) {
+                            if (!sa.id) {
+                                sa.id = subId;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+        // Verify subagents status and latest output
+        for (const [_, sa] of subagentsMap.entries()) {
+            if (sa.id) {
+                const subTPath = path.join(brainDir, sa.id, ".system_generated", "logs", "transcript.jsonl");
+                if (fs.existsSync(subTPath)) {
+                    try {
+                        const subLines = fs.readFileSync(subTPath, "utf-8").trim().split("\n");
+                        if (subLines.length > 0) {
+                            const lastStep = JSON.parse(subLines[subLines.length - 1]);
+                            sa.status = lastStep.status === "DONE" ? "DONE" : "RUNNING";
+                            sa.action = lastStep.status === "DONE"
+                                ? "Completed task and reported to parent agent ✓"
+                                : "Active in isolated subagent workspace";
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+        const subagents = Array.from(subagentsMap.values());
+        const tasksDir = path.join(brainDir, target.id, ".system_generated", "tasks");
+        const activeTasks = [];
+        if (fs.existsSync(tasksDir)) {
+            try {
+                const taskFiles = fs.readdirSync(tasksDir).filter((f) => f.endsWith(".log"));
+                for (const tf of taskFiles.slice(-4)) {
+                    const tPath = path.join(tasksDir, tf);
+                    const stat = fs.statSync(tPath);
+                    const content = fs.readFileSync(tPath, "utf-8");
+                    const lastLine = content.trim().split("\n").pop() || "Running...";
+                    activeTasks.push({
+                        taskId: tf.replace(".log", ""),
+                        updatedAt: stat.mtimeMs,
+                        status: lastLine.slice(0, 100)
+                    });
+                }
+            }
+            catch { }
+        }
+        return {
+            activeId: target.id,
+            allConvs: convs.slice(0, 8).map((c) => ({ id: c.id, mtime: c.mtime })),
+            prompt,
+            recentOps: operations.slice(-12),
+            subagents,
+            activeTasks
+        };
+    }
+    catch (err) {
+        return null;
+    }
+}
 export function broadcastEvent(event, data) {
     const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of clients) {
@@ -233,7 +370,24 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                             platform: process.platform,
                             uptime: process.uptime(),
                         },
+                        brain: getAntigravityBrainState(),
                     }));
+                }
+                catch (err) {
+                    res.writeHead(500, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ error: String(err) }));
+                }
+                return;
+            }
+            // 2b. Select/Pin Antigravity Conversation API
+            if (url === "/api/brain/select" && req.method === "POST") {
+                try {
+                    const body = await parseBody(req);
+                    pinnedConversationId = body.id === "auto" ? null : (body.id || null);
+                    const updatedBrain = getAntigravityBrainState(pinnedConversationId || undefined);
+                    broadcastEvent("brain_switched", updatedBrain);
+                    res.writeHead(200, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ success: true, brain: updatedBrain }));
                 }
                 catch (err) {
                     res.writeHead(500, { "Content-Type": "application/json" });

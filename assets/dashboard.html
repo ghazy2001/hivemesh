@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HiveMesh Swarm Mission Control</title>
+  <title>Antigravity Live Swarm Observatory</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     :root {
@@ -43,7 +43,6 @@
       animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Minimalist smooth scrollbar */
     ::-webkit-scrollbar {
       width: 4px;
       height: 4px;
@@ -60,87 +59,101 @@
 <body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex items-center justify-center font-sans selection:bg-indigo-500/20 p-4 lg:p-6">
 
   <!-- =========================================================================
-       HIVEMESH ORCHESTRATION CANVAS
-       [ Master Orchestrator (Left) ] ───► [ Dynamic Agent Cards (Right) ]
+       ANTIGRAVITY LIVE OBSERVATORY & CONVERSATION MIRROR
        ========================================================================= -->
-  <main class="w-full max-w-[1400px] mx-auto my-auto">
-    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 lg:p-7 relative shadow-2xl min-h-[560px] flex flex-col justify-center">
+  <main class="w-full max-w-[1440px] mx-auto my-auto space-y-4">
+    
+    <!-- Top Conversation Switcher Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 rounded-xl bg-[var(--card)] border border-[var(--border)] shadow-md text-xs font-mono">
+      <div class="flex items-center gap-2.5">
+        <span class="text-base">🛰️</span>
+        <span class="font-bold text-white uppercase tracking-wider">Antigravity Live Hub</span>
+        <span class="text-zinc-600">|</span>
+        <button onclick="selectConversation('auto')" id="auto-follow-btn" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition cursor-pointer font-semibold" title="Automatically track whichever conversation is active in Antigravity">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
+          <span>Auto-Follow Active Chat</span>
+        </button>
+      </div>
+
+      <!-- Recent Conversations Chips (Click to switch view) -->
+      <div class="flex items-center gap-2 overflow-x-auto" id="conversations-chips">
+        <!-- Rendered dynamically via JS -->
+      </div>
+    </div>
+
+    <!-- Main 2-Deck Split Layout -->
+    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 lg:p-7 relative shadow-2xl min-h-[580px] flex flex-col justify-center">
       
       <div class="flex flex-col lg:flex-row gap-6 items-stretch w-full">
         
         <!-- ===================================================================
-             LEFT CARD: MASTER ORCHESTRATOR (Prompt + Operations Stream)
+             LEFT DECK: ACTIVE CONVERSATION & OPERATIONS STREAM
              =================================================================== -->
-        <div class="w-full lg:w-[440px] shrink-0 flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-b from-indigo-950/25 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300" id="orchestrator-main-card">
+        <div class="w-full lg:w-[460px] shrink-0 flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-b from-indigo-950/25 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300" id="main-agent-card">
           
           <div class="space-y-4">
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-indigo-500/20 pb-3.5">
               <div class="flex items-center gap-2">
-                <span class="text-xl">👑</span>
+                <span class="text-xl">🤖</span>
                 <div>
-                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-200">Master Orchestrator</div>
-                  <div class="text-[10px] font-mono text-zinc-500">Autonomous Critical-Path Planner</div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-indigo-200">Antigravity Agent</div>
+                  <div class="text-[10px] font-mono text-zinc-500 truncate max-w-[200px]" id="current-conv-id">#active-session</div>
                 </div>
               </div>
-              <span id="orch-state-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 status-ring"></span>
-                <span>Standing By</span>
+              <span id="agent-state-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
+                <span>Active</span>
               </span>
             </div>
 
-            <!-- 1. The Prompt -->
+            <!-- 1. The Current User Prompt -->
             <div class="space-y-1.5">
               <div class="text-[10px] font-mono text-indigo-300/80 uppercase tracking-wider flex items-center justify-between">
-                <span>Current Directive (Prompt)</span>
-                <span id="directive-sync-badge" class="text-[9px] text-zinc-500">Listening on socket</span>
+                <span>Chat Directive (Prompt)</span>
+                <span id="prompt-timestamp" class="text-[9px] text-zinc-500">Live Transcript</span>
               </div>
-              <div id="orch-directive-text" class="text-xs font-mono font-medium text-white p-3.5 rounded-xl bg-black/40 border border-indigo-500/20 min-h-[60px] flex items-center leading-relaxed">
+              <div id="active-prompt-text" class="text-xs font-mono font-medium text-white p-3.5 rounded-xl bg-black/40 border border-indigo-500/20 min-h-[64px] flex items-center leading-relaxed">
                 <div class="flex items-center gap-1 text-zinc-400">
-                  <span>Awaiting task prompt in chat</span>
+                  <span>Listening to conversation transcript</span>
                   <span class="cursor-blink text-indigo-400 font-bold">_</span>
                 </div>
               </div>
             </div>
 
-            <!-- 2. The Operations Being Executed ("العمليات اللي بتتم زي عندنا") -->
+            <!-- 2. Live Operations Stream ("العمليات اللي بتتم زي عندنا") -->
             <div class="space-y-2 pt-1">
               <div class="text-[10px] font-mono text-indigo-300 uppercase tracking-wider flex items-center justify-between">
                 <span class="flex items-center gap-1.5">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-                  <span>Live Operations</span>
+                  <span>Live Operations Stream</span>
                 </span>
-                <span id="orch-ops-count" class="text-zinc-500 text-[9px] font-mono">Stream Active</span>
+                <span id="ops-count-badge" class="text-zinc-500 text-[9px] font-mono">Real-Time Actions</span>
               </div>
 
-              <!-- Streamlined process list like Antigravity's thought/action tree -->
-              <div id="orch-operations-list" class="space-y-1.5 text-xs font-mono max-h-[220px] overflow-y-auto pr-1">
-                <div class="flex items-start gap-2 text-zinc-400 text-[11px] py-1 px-2.5 rounded-lg bg-black/30 border border-zinc-800/60">
-                  <span class="text-emerald-400 mt-0.5 shrink-0 text-[10px]">●</span>
-                  <span class="leading-relaxed truncate">Orchestrator standing by for chat directives</span>
-                </div>
+              <!-- Sleek process list mimicking Antigravity tool-call items -->
+              <div id="operations-list-box" class="space-y-1.5 text-xs font-mono max-h-[240px] overflow-y-auto pr-1">
+                <!-- Dynamically populated from transcript tool_calls -->
               </div>
             </div>
 
           </div>
 
-          <!-- Bottom Note & Reset Button -->
-          <div class="pt-3 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-            <span class="flex items-center gap-1.5 text-zinc-500">
+          <!-- Bottom Status Footer -->
+          <div class="pt-3.5 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+            <span class="flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-              <span>P2P Blackboard Linked</span>
+              <span>Brain Transcript Mirror Linked</span>
             </span>
-            <button onclick="cleanActiveSwarm()" id="reset-swarm-btn" class="text-zinc-500 hover:text-rose-400 transition cursor-pointer hidden items-center gap-1">
-              <span>🔄 Reset Swarm</span>
-            </button>
+            <span class="text-zinc-400 font-semibold" id="ops-total-count">0 Tools Run</span>
           </div>
 
-          <!-- Top Glowing Accent -->
+          <!-- Top Glowing Accent Line -->
           <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400 rounded-t-2xl"></div>
         </div>
 
         <!-- ===================================================================
-             RIGHT STAGE: DYNAMIC AGENT CARDS (In-Place Text Updates, No Refresh)
+             RIGHT STAGE: PARALLEL SUBAGENTS & WORKERS ("الايجنت بيعمل ايه")
              =================================================================== -->
         <div class="w-full flex-1 flex flex-col justify-between p-6 rounded-2xl bg-[var(--card-inner)] border border-[var(--border)] shadow-xl relative min-h-[460px]" id="agents-stage">
           
@@ -150,24 +163,24 @@
               <div class="flex items-center gap-2">
                 <span class="text-base text-emerald-400">⚡</span>
                 <div>
-                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Parallel Agent Worktrees</div>
-                  <div class="text-[10px] font-mono text-zinc-500">Isolated Git Worktrees Operating in Background</div>
+                  <div class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">Subagents & Background Workers</div>
+                  <div class="text-[10px] font-mono text-zinc-500">Parallel Agents Operating in This Conversation</div>
                 </div>
               </div>
-              <span id="agents-count-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                0 Active Agents
+              <span id="subagents-count-badge" class="text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                0 Active Workers
               </span>
             </div>
 
-            <!-- Dynamic Agent Cards Container (Updated in-place, zero re-render flicker) -->
-            <div id="dynamic-agents-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <!-- Populated once, then contents updated smoothly without recreating cards -->
+            <!-- Dynamic Small Cards Grid (Updated in-place with zero flicker) -->
+            <div id="subagents-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              <!-- Rendered via JS: subagents, background tasks, or primary workspace card -->
             </div>
           </div>
 
           <!-- Stage Bottom Footer -->
-          <div class="pt-3 border-t border-[var(--border)] mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500">
-            <span>AST Semantic Bus:</span>
+          <div class="pt-3.5 border-t border-[var(--border)] mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+            <span>Workspace Sync:</span>
             <span class="text-emerald-400 font-semibold">Active & Conflict-Free ✓</span>
           </div>
 
@@ -179,232 +192,241 @@
   </main>
 
   <!-- =========================================================================
-       ZERO-FLICKER REAL-TIME CONTROLLER
+       REAL-TIME TRANSCRIPT CONTROLLER & AUTO-CONVERSATION FOLLOWER
        ========================================================================= -->
   <script>
-    let activeSwarm = null;
-    let currentPlan = {};
-    let isAnalyzing = false;
+    let activeConversationId = null;
+    let autoFollow = true;
+    let lastRenderedPrompt = '';
 
     function escapeHtml(str) {
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // Add operation item to the Orchestrator's process list ("العمليات اللي بتتم زي عندنا")
-    function addOrchOp(text) {
-      const list = document.getElementById('orch-operations-list');
-      if (!list) return;
-
-      // Avoid exact duplicates in succession
-      if (list.lastElementChild && list.lastElementChild.dataset.opText === text) return;
-
-      const row = document.createElement('div');
-      row.dataset.opText = text;
-      row.className = "flex items-start gap-2 text-zinc-300 text-[11px] py-1 px-2.5 rounded-lg bg-black/40 border border-zinc-800/80 animate-enter";
-      row.innerHTML = `
-        <span class="text-emerald-400 mt-0.5 shrink-0 text-[10px]">●</span>
-        <span class="leading-relaxed font-mono truncate">${escapeHtml(text)}</span>
-      `;
-      list.appendChild(row);
-      list.scrollTop = list.scrollHeight;
-    }
-
-    function clearOrchOps() {
-      const list = document.getElementById('orch-operations-list');
-      if (list) list.innerHTML = '';
-    }
-
-    // Default standby view for the right stage
-    function renderStandbyState() {
-      const grid = document.getElementById('dynamic-agents-grid');
-      if (!grid) return;
-
-      grid.className = "flex flex-col items-center justify-center py-16 text-center space-y-3 w-full border border-dashed border-zinc-800 rounded-xl bg-black/20";
-      grid.innerHTML = `
-        <div class="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl text-zinc-500">
-          ⚡
-        </div>
-        <div class="space-y-1">
-          <div class="text-xs font-mono font-semibold text-zinc-400">Parallel Agents Standing By</div>
-          <p class="text-[10px] font-mono text-zinc-600 max-w-sm">
-            When you send a command in chat, the Orchestrator will calculate domain boundaries and spawn agent cards here in real time.
-          </p>
-        </div>
-      `;
-    }
-
-    async function cleanActiveSwarm() {
-      if (!activeSwarm && !activeSwarm?.id) {
-        try {
-          const res = await fetch('/api/status');
-          const data = await res.json();
-          if (data.swarms && data.swarms.length > 0) activeSwarm = data.swarms[0];
-        } catch {}
+    async function selectConversation(convId) {
+      if (convId === 'auto') {
+        autoFollow = true;
+        activeConversationId = null;
+      } else {
+        autoFollow = false;
+        activeConversationId = convId;
       }
 
-      if (!activeSwarm) {
-        resetToStandby();
-        return;
-      }
+      updateAutoFollowButton();
 
       try {
-        await fetch('/api/swarm/clean', {
+        await fetch('/api/brain/select', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ swarmId: activeSwarm.id })
+          body: JSON.stringify({ id: convId })
         });
-        activeSwarm = null;
-        resetToStandby();
-        addOrchOp("Swarm cleaned and reset to standby.");
+      } catch {}
+
+      fetchBrainState();
+    }
+
+    function updateAutoFollowButton() {
+      const btn = document.getElementById('auto-follow-btn');
+      if (!btn) return;
+      if (autoFollow) {
+        btn.className = "px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition cursor-pointer font-semibold";
+        btn.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span><span>Auto-Follow Active Chat</span>`;
+      } else {
+        btn.className = "px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center gap-1.5 transition cursor-pointer font-normal hover:text-white";
+        btn.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span><span>Pinned (Click to Auto-Follow)</span>`;
+      }
+    }
+
+    async function fetchBrainState() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const brain = data.brain;
+        if (!brain) return;
+
+        // 1. Render Top Conversation Chips
+        renderConversationChips(brain.allConvs || [], brain.activeId);
+
+        // 2. Render Left Deck (Prompt & Live Operations)
+        renderLeftDeck(brain);
+
+        // 3. Render Right Stage (Subagents, Tasks, Swarm Worktrees)
+        renderRightStage(brain, data.swarms || []);
+
       } catch (err) {
-        console.error('Clean failed:', err);
+        console.error("Brain fetch error:", err);
       }
     }
 
-    function resetToStandby() {
-      isAnalyzing = false;
+    function renderConversationChips(convs, activeId) {
+      const container = document.getElementById('conversations-chips');
+      if (!container) return;
 
-      // 1. Reset Orchestrator Card on Left
-      const dirText = document.getElementById('orch-directive-text');
-      if (dirText) {
-        dirText.innerHTML = `
-          <div class="flex items-center gap-1 text-zinc-400">
-            <span>Awaiting task prompt in chat</span>
-            <span class="cursor-blink text-indigo-400 font-bold">_</span>
-          </div>
+      container.innerHTML = convs.map(c => {
+        const isCurrent = (c.id === activeId);
+        const shortId = c.id.slice(0, 8);
+        const activeClass = isCurrent
+          ? "bg-indigo-600 text-white font-bold border-indigo-400 shadow"
+          : "bg-black/40 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700";
+
+        return `
+          <button onclick="selectConversation('${c.id}')" class="px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer flex items-center gap-1 ${activeClass}">
+            ${isCurrent ? '<span class="w-1 h-1 rounded-full bg-emerald-400"></span>' : ''}
+            <span>#${shortId}</span>
+          </button>
         `;
-      }
-      const syncBadge = document.getElementById('directive-sync-badge');
-      if (syncBadge) syncBadge.innerText = "Listening on socket";
-
-      const stateBadge = document.getElementById('orch-state-badge');
-      if (stateBadge) {
-        stateBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5";
-        stateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 status-ring"></span><span>Standing By</span>`;
-      }
-
-      document.getElementById('reset-swarm-btn')?.classList.add('hidden');
-      clearOrchOps();
-      addOrchOp("Orchestrator standing by for chat directives");
-
-      // 2. Reset Right Stage
-      const countBadge = document.getElementById('agents-count-badge');
-      if (countBadge) {
-        countBadge.innerText = "0 Active Agents";
-        countBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700";
-      }
-      renderStandbyState();
+      }).join('');
     }
 
-    function showAnalyzing(prompt, roles) {
-      isAnalyzing = true;
+    function renderLeftDeck(brain) {
+      // Update Conversation ID badge
+      const convBadge = document.getElementById('current-conv-id');
+      if (convBadge) convBadge.innerText = `#${brain.activeId}`;
 
-      // 1. Update Left Card: Show Prompt & Add Operations
-      const dirText = document.getElementById('orch-directive-text');
-      if (dirText) {
-        dirText.innerHTML = `<span class="text-white font-mono">"${escapeHtml(prompt)}"</span>`;
-      }
-      const syncBadge = document.getElementById('directive-sync-badge');
-      if (syncBadge) syncBadge.innerText = "Analyzing directive...";
-
-      const stateBadge = document.getElementById('orch-state-badge');
-      if (stateBadge) {
-        stateBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/25 text-indigo-200 border border-indigo-400/50 animate-pulse flex items-center gap-1.5";
-        stateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span><span>Analyzing & Sizing</span>`;
+      // Update Prompt (In-place)
+      const promptEl = document.getElementById('active-prompt-text');
+      if (promptEl) {
+        const cleanPrompt = brain.prompt || "Standing by for chat prompt...";
+        if (lastRenderedPrompt !== cleanPrompt) {
+          lastRenderedPrompt = cleanPrompt;
+          promptEl.innerHTML = `<span class="text-white font-mono leading-relaxed">"${escapeHtml(cleanPrompt)}"</span>`;
+        }
       }
 
-      clearOrchOps();
-      addOrchOp(`Received directive: "${prompt.slice(0, 50)}..."`);
-      addOrchOp(`Scanning AST & repository domain boundaries`);
-      addOrchOp(`Calculating critical path: Sizing ${roles.length || 3} parallel agent domains`);
-      addOrchOp(`Allocating isolated Git worktrees...`);
+      // Update Operations List ("العمليات اللي بتتم زي عندنا")
+      const list = document.getElementById('operations-list-box');
+      if (list && brain.recentOps) {
+        list.innerHTML = brain.recentOps.map(op => `
+          <div class="flex items-center justify-between text-zinc-300 text-[11px] py-1.5 px-3 rounded-lg bg-black/40 border border-zinc-800/80 hover:border-zinc-700 transition">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-emerald-400 shrink-0 text-[10px]">●</span>
+              <span class="font-mono truncate leading-relaxed text-zinc-200">${escapeHtml(op.label || op.summary)}</span>
+            </div>
+            <span class="text-zinc-600 font-mono text-[10px] shrink-0 ml-2">&gt;</span>
+          </div>
+        `).join('');
+      }
 
-      // 2. Right Stage Badge
-      const countBadge = document.getElementById('agents-count-badge');
-      if (countBadge) {
-        countBadge.innerText = `Preparing ${roles.length || 3} Worktrees...`;
-        countBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse";
+      const totalCount = document.getElementById('ops-total-count');
+      if (totalCount && brain.recentOps) {
+        totalCount.innerText = `${brain.recentOps.length} Recent Operations`;
       }
     }
 
-    // UPDATE IN-PLACE: NO RE-RENDER FLICKER!
-    function renderActiveSwarm(swarm, plan, promptText, activities = {}) {
-      isAnalyzing = false;
-
-      // 1. Update Orchestrator on Left (Text update only)
-      const dirText = document.getElementById('orch-directive-text');
-      if (dirText && promptText) {
-        dirText.innerHTML = `<span class="text-white font-mono leading-relaxed">"${escapeHtml(promptText)}"</span>`;
-      }
-      const syncBadge = document.getElementById('directive-sync-badge');
-      if (syncBadge) syncBadge.innerText = "Dispatched & Active ✓";
-
-      const stateBadge = document.getElementById('orch-state-badge');
-      if (stateBadge) {
-        stateBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5";
-        stateBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>Active Coordinator</span>`;
-      }
-
-      const resetBtn = document.getElementById('reset-swarm-btn');
-      if (resetBtn) {
-        resetBtn.classList.remove('hidden');
-        resetBtn.classList.add('flex');
-      }
-
-      // 2. Right Stage: Check if grid is in standby mode, switch if needed
-      const grid = document.getElementById('dynamic-agents-grid');
+    function renderRightStage(brain, swarms) {
+      const grid = document.getElementById('subagents-grid') || document.getElementById('dynamic-agents-grid');
+      const badge = document.getElementById('subagents-count-badge');
       if (!grid) return;
 
-      if (grid.classList.contains('flex-col')) {
-        grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4 w-full";
-        grid.innerHTML = '';
+      const subagents = brain.subagents || [];
+      const tasks = brain.activeTasks || [];
+      const swarmWorktrees = (swarms && swarms.length > 0) ? swarms[0].worktrees : [];
+
+      const totalWorkers = subagents.length + swarmWorktrees.length + tasks.length;
+
+      if (badge) {
+        badge.innerText = `${totalWorkers || 1} Active Worker(s)`;
+        badge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
       }
 
-      const countBadge = document.getElementById('agents-count-badge');
-      if (countBadge) {
-        countBadge.innerText = `${swarm.worktrees.length} Parallel Worktrees Active`;
-        countBadge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+      // Dynamic cards data
+      const cardsData = [];
+
+      // Add Subagents
+      subagents.forEach((sa, idx) => {
+        const isDone = (sa.status === 'DONE');
+        cardsData.push({
+          id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
+          title: sa.role,
+          badge: isDone ? 'COMPLETED' : sa.type.toUpperCase(),
+          badgeClass: isDone ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+          color: idx === 0 ? "#3b82f6" : "#a855f7",
+          activity: sa.action || (isDone ? 'Completed assigned task successfully ✓' : 'Operating in isolated workspace'),
+          footer: `Subagent ID: ${(sa.id || 'Active').slice(0, 18)}...`
+        });
+      });
+
+      // Add Swarm Worktrees if active
+      swarmWorktrees.forEach((wt, idx) => {
+        cardsData.push({
+          id: `worktree-${wt.role}`,
+          title: wt.role,
+          badge: "GIT WORKTREE",
+          badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+          color: "#10b981",
+          activity: `Operating in isolated branch ${wt.branch}`,
+          footer: `📁 ${wt.path.split(/[\\/]/).pop()}`
+        });
+      });
+
+      // Add Active Tasks if any
+      tasks.forEach((t) => {
+        cardsData.push({
+          id: `task-${t.taskId}`,
+          title: `Task: ${t.taskId}`,
+          badge: 'BACKGROUND',
+          badgeClass: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+          color: '#f59e0b',
+          activity: t.status || 'Executing background job...',
+          footer: 'Antigravity Background Worker'
+        });
+      });
+
+      // If no subagents or worktrees, render the Primary Agent's live card!
+      if (cardsData.length === 0) {
+        const lastOp = brain.recentOps && brain.recentOps.length > 0 ? (brain.recentOps[brain.recentOps.length - 1].label || brain.recentOps[brain.recentOps.length - 1].summary) : "Ready and listening in chat";
+        cardsData.push({
+          id: "primary-agent-card",
+          title: "Primary Pair-Programming Agent",
+          badge: "ACTIVE AGENT",
+          badgeClass: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+          color: "#6366f1",
+          activity: lastOp,
+          footer: "Workspace: D:\\twenty-crm"
+        });
       }
 
-      const colors = ["#3b82f6", "#a855f7", "#10b981", "#f59e0b", "#ec4899", "#06b6d4"];
-
-      // Update or create each card without recreating existing DOM nodes
-      swarm.worktrees.forEach((wt, idx) => {
-        const color = colors[idx % colors.length];
-        const currentAct = activities[wt.role] || (plan[wt.role] ? `Active: ${plan[wt.role]}` : "Operating in isolated worktree...");
-        let card = document.getElementById(`card-${wt.role}`);
-
-        if (card) {
-          // UPDATE EXISTING CARD IN-PLACE: ZERO FLICKER!
-          const actEl = document.getElementById(`act-${wt.role}`);
-          if (actEl && actEl.innerText !== currentAct) {
-            actEl.innerText = currentAct;
+      // Update existing DOM cards in-place to prevent any flickering!
+      cardsData.forEach(card => {
+        let el = document.getElementById(card.id);
+        if (el) {
+          // UPDATE IN-PLACE (ZERO FLICKER)
+          const actEl = document.getElementById(`act-${card.id}`);
+          if (actEl && actEl.innerText !== card.activity) {
+            actEl.innerText = card.activity;
           }
-          const branchEl = document.getElementById(`branch-${wt.role}`);
-          if (branchEl) {
-            branchEl.innerText = `🌿 ${wt.branch}`;
+          const footEl = document.getElementById(`foot-${card.id}`);
+          if (footEl && footEl.innerText !== card.footer) {
+            footEl.innerText = card.footer;
+          }
+          const badgeEl = document.getElementById(`badge-${card.id}`);
+          if (badgeEl && badgeEl.innerText !== card.badge) {
+            badgeEl.innerText = card.badge;
+            badgeEl.className = `text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border ${card.badgeClass}`;
           }
         } else {
-          // CREATE CARD ONCE
+          // CREATE ONCE
           const div = document.createElement('div');
-          div.id = `card-${wt.role}`;
+          div.id = card.id;
           div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-zinc-700 transition shadow-md space-y-2.5 animate-enter";
           div.innerHTML = `
             <div class="flex items-center justify-between">
-              <span class="font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5" style="color: ${color};">
-                <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${color};"></span>
-                ${escapeHtml(wt.role)}
+              <span class="font-bold text-xs uppercase tracking-wider font-mono flex items-center gap-1.5" style="color: ${card.color};">
+                <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${card.color};"></span>
+                ${escapeHtml(card.title)}
               </span>
-              <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-semibold border border-emerald-500/20">
-                ACTIVE
+              <span id="badge-${card.id}" class="text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border ${card.badgeClass}">
+                ${escapeHtml(card.badge)}
               </span>
             </div>
             <div class="px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px] font-mono">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring shrink-0"></span>
-              <span class="font-medium leading-tight truncate" id="act-${escapeHtml(wt.role)}">${escapeHtml(currentAct)}</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 status-ring shrink-0"></span>
+              <span class="font-medium leading-tight truncate" id="act-${card.id}">${escapeHtml(card.activity)}</span>
             </div>
             <div class="pt-1 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80">
-              <span class="truncate text-zinc-400" id="branch-${escapeHtml(wt.role)}">🌿 ${escapeHtml(wt.branch)}</span>
+              <span class="truncate text-zinc-400" id="foot-${card.id}">${escapeHtml(card.footer)}</span>
               <span class="text-emerald-400/90 font-semibold shrink-0">AST Bus ✓</span>
             </div>
           `;
@@ -412,99 +434,28 @@
         }
       });
 
-      // Remove any cards that no longer exist in this swarm
-      const activeIds = new Set(swarm.worktrees.map(w => `card-${w.role}`));
+      // Remove obsolete cards
+      const activeCardIds = new Set(cardsData.map(c => c.id));
       Array.from(grid.children).forEach(child => {
-        if (child.id && !activeIds.has(child.id)) {
+        if (child.id && !activeCardIds.has(child.id)) {
           child.remove();
         }
       });
     }
 
-    async function fetchStatus() {
-      if (isAnalyzing) return; // Do not interrupt analyzing animation
-
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        currentPlan = data.plan || {};
-
-        if (data.orchestratorPhase === 'analyzing') {
-          showAnalyzing(data.prompt, Object.keys(data.plan || {}));
-          return;
-        }
-
-        if (data.swarms && data.swarms.length > 0) {
-          activeSwarm = data.swarms[0];
-          renderActiveSwarm(activeSwarm, currentPlan, data.prompt, data.activities || {});
-        } else {
-          activeSwarm = null;
-          resetToStandby();
-        }
-      } catch (err) {
-        console.error("Failed to fetch status:", err);
-      }
-    }
-
     function initSSE() {
       if (window.location.protocol.startsWith('http')) {
         const evt = new EventSource('/events');
-
-        // 1. Orchestrator received command
-        evt.addEventListener('orchestrator_thinking', (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            showAnalyzing(data.prompt, data.roles || []);
-          } catch (err) {
-            console.error(err);
-          }
-        });
-
-        // 2. Swarm created: spawn cards to the right
-        evt.addEventListener('swarm_created', (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            currentPlan = data.plan || {};
-            activeSwarm = data.swarm;
-
-            addOrchOp(`All ${activeSwarm.worktrees.length} isolated worktrees allocated and active ✓`);
-
-            setTimeout(() => {
-              renderActiveSwarm(activeSwarm, currentPlan, data.prompt, data.activities || {});
-            }, 1000);
-          } catch (err) {
-            console.error(err);
-          }
-        });
-
-        // 3. Live agent activity update ("العمليات البتحصل") - In-Place Update!
-        evt.addEventListener('agent_activity', (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            const actEl = document.getElementById(`act-${data.role}`);
-            if (actEl) {
-              actEl.innerText = data.action;
-              actEl.parentElement?.classList.add('animate-pulse');
-              setTimeout(() => actEl.parentElement?.classList.remove('animate-pulse'), 800);
-            }
-            addOrchOp(`[${data.role}] ${data.action}`);
-          } catch (err) {
-            console.error(err);
-          }
-        });
-
-        evt.addEventListener('swarm_cleaned', () => resetToStandby());
-        evt.addEventListener('agent_steered', () => fetchStatus());
-        evt.onerror = () => {};
+        evt.addEventListener('brain_switched', () => fetchBrainState());
+        evt.addEventListener('agent_activity', () => fetchBrainState());
+        evt.addEventListener('swarm_created', () => fetchBrainState());
+        evt.addEventListener('swarm_cleaned', () => fetchBrainState());
       }
     }
 
-    renderStandbyState();
-    fetchStatus();
+    fetchBrainState();
     initSSE();
-    setInterval(fetchStatus, 1500);
+    setInterval(fetchBrainState, 1500);
   </script>
 </body>
 </html>
