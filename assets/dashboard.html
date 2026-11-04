@@ -257,6 +257,8 @@
     let activeConversationId = null;
     let autoFollow = true;
     let lastRenderedPrompt = '';
+    let lastRenderedChipsHash = '';
+    let lastRenderedOpsHash = '';
     let currentBrainData = null;
     let currentSwarmsData = null;
     let currentStageTab = 'running';
@@ -299,6 +301,7 @@
       } else {
         expandedOpIds.add(opId);
       }
+      lastRenderedOpsHash = ''; // Invalidate memoized hash so renderLeftDeck updates immediately
       if (currentBrainData) {
         renderLeftDeck(currentBrainData);
       }
@@ -386,6 +389,9 @@
     }
 
     async function selectConversation(convId) {
+      lastRenderedChipsHash = '';
+      lastRenderedOpsHash = '';
+      lastRenderedPrompt = '';
       if (convId === 'auto') {
         autoFollow = true;
         activeConversationId = null;
@@ -449,6 +455,10 @@
       const container = document.getElementById('conversations-chips');
       if (!container) return;
 
+      const chipsHash = convs.map(c => c.id + ':' + c.mtime).join(',') + '|' + activeId;
+      if (chipsHash === lastRenderedChipsHash) return;
+      lastRenderedChipsHash = chipsHash;
+
       container.innerHTML = convs.map(c => {
         const isCurrent = (c.id === activeId);
         const shortId = c.id.slice(0, 8);
@@ -468,7 +478,9 @@
     function renderLeftDeck(brain) {
       // Update Conversation ID badge
       const convBadge = document.getElementById('current-conv-id');
-      if (convBadge) convBadge.innerText = `#${brain.activeId}`;
+      if (convBadge && convBadge.innerText !== `#${brain.activeId}`) {
+        convBadge.innerText = `#${brain.activeId}`;
+      }
 
       // Update Prompt (In-place)
       const promptEl = document.getElementById('active-prompt-text');
@@ -483,48 +495,53 @@
       // Update Operations List ("العمليات اللي بتتم زي عندنا")
       const list = document.getElementById('operations-list-box');
       if (list && brain.recentOps) {
-        list.innerHTML = brain.recentOps.map(op => {
-          const isExpanded = expandedOpIds.has(op.id);
-          const badgeClass = getToolBadgeClass(op.tool);
-          return `
-            <div id="${op.id}" class="rounded-xl border ${isExpanded ? 'border-indigo-500/50 bg-zinc-950/90 shadow-lg' : 'border-zinc-800/80 bg-black/40 hover:border-zinc-700'} transition overflow-hidden">
-              <div onclick="toggleOperationExpansion('${op.id}')" class="flex items-center justify-between text-zinc-300 text-[11px] py-1.5 px-3 cursor-pointer hover:bg-zinc-900/60 transition group select-none">
-                <div class="flex items-center gap-2 truncate">
-                  <span class="text-emerald-400 shrink-0 text-[10px]">●</span>
-                  <span class="font-mono truncate leading-relaxed ${isExpanded ? 'text-white font-semibold' : 'text-zinc-200'}">${escapeHtml(op.label || op.summary)}</span>
-                </div>
-                <div class="flex items-center gap-1.5 shrink-0 ml-2">
-                  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${badgeClass}">${escapeHtml(op.tool)}</span>
-                  <button onclick="event.stopPropagation(); toggleOperationExpansion('${op.id}')" class="w-5 h-5 rounded hover:bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-indigo-400 transition cursor-pointer" title="عرض تفاصيل العملية">
-                    <span class="font-mono text-[11px] inline-block transition-transform duration-200 ${isExpanded ? 'rotate-90 text-indigo-400 font-bold' : ''}">&gt;</span>
-                  </button>
-                </div>
-              </div>
-
-              ${isExpanded ? `
-                <div class="p-3 border-t border-zinc-800/80 bg-zinc-950/70 space-y-2.5 text-[11px] font-mono animate-enter">
-                  <div class="flex items-center justify-between text-[10px] text-zinc-500">
-                    <span class="text-indigo-400 font-semibold">Step #${op.stepIndex}</span>
-                    <span>${op.time ? new Date(op.time).toLocaleTimeString() : ''}</span>
+        const opsHash = brain.recentOps.map(op => op.id + ':' + op.stepIndex + ':' + op.label).join(';') + '|' + Array.from(expandedOpIds).sort().join(',');
+        if (opsHash !== lastRenderedOpsHash) {
+          lastRenderedOpsHash = opsHash;
+          list.innerHTML = brain.recentOps.map(op => {
+            const isExpanded = expandedOpIds.has(op.id);
+            const badgeClass = getToolBadgeClass(op.tool);
+            return `
+              <div id="${op.id}" class="rounded-xl border ${isExpanded ? 'border-indigo-500/50 bg-zinc-950/90 shadow-lg' : 'border-zinc-800/80 bg-black/40 hover:border-zinc-700'} transition overflow-hidden">
+                <div onclick="toggleOperationExpansion('${op.id}')" class="flex items-center justify-between text-zinc-300 text-[11px] py-1.5 px-3 cursor-pointer hover:bg-zinc-900/60 transition group select-none">
+                  <div class="flex items-center gap-2 truncate">
+                    <span class="text-emerald-400 shrink-0 text-[10px]">●</span>
+                    <span class="font-mono truncate leading-relaxed ${isExpanded ? 'text-white font-semibold' : 'text-zinc-200'}">${escapeHtml(op.label || op.summary)}</span>
                   </div>
-                  ${renderOpArgsSnippet(op)}
-                  ${renderOpOutputSnippet(op)}
-                  <div class="pt-1 flex items-center justify-between border-t border-zinc-800/60">
-                    <span class="text-[10px] text-emerald-400/90 font-medium">Verified Execution Output ✓</span>
-                    <button onclick="event.stopPropagation(); openOperationModal('${op.id}')" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition cursor-pointer">
-                      <span>عرض تفاصيل الفحص الكاملة</span> ↗
+                  <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${badgeClass}">${escapeHtml(op.tool)}</span>
+                    <button onclick="event.stopPropagation(); toggleOperationExpansion('${op.id}')" class="w-5 h-5 rounded hover:bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-indigo-400 transition cursor-pointer" title="عرض تفاصيل العملية">
+                      <span class="font-mono text-[11px] inline-block transition-transform duration-200 ${isExpanded ? 'rotate-90 text-indigo-400 font-bold' : ''}">&gt;</span>
                     </button>
                   </div>
                 </div>
-              ` : ''}
-            </div>
-          `;
-        }).join('');
+
+                ${isExpanded ? `
+                  <div class="p-3 border-t border-zinc-800/80 bg-zinc-950/70 space-y-2.5 text-[11px] font-mono">
+                    <div class="flex items-center justify-between text-[10px] text-zinc-500">
+                      <span class="text-indigo-400 font-semibold">Step #${op.stepIndex}</span>
+                      <span>${op.time ? new Date(op.time).toLocaleTimeString() : ''}</span>
+                    </div>
+                    ${renderOpArgsSnippet(op)}
+                    ${renderOpOutputSnippet(op)}
+                    <div class="pt-1 flex items-center justify-between border-t border-zinc-800/60">
+                      <span class="text-[10px] text-emerald-400/90 font-medium">Verified Execution Output ✓</span>
+                      <button onclick="event.stopPropagation(); openOperationModal('${op.id}')" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition cursor-pointer">
+                        <span>عرض تفاصيل الفحص الكاملة</span> ↗
+                      </button>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        }
       }
 
       const totalCount = document.getElementById('ops-total-count');
       if (totalCount && brain.recentOps) {
-        totalCount.innerText = `${brain.recentOps.length} Recent Operations`;
+        const text = `${brain.recentOps.length} Recent Operations`;
+        if (totalCount.innerText !== text) totalCount.innerText = text;
       }
     }
 
@@ -565,28 +582,33 @@
 
       // 1. When on 'running' tab and no subagents are currently executing:
       if (currentStageTab === 'running' && runningSubagents.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-1 md:col-span-2 flex flex-col items-center justify-center p-10 text-center rounded-2xl bg-black/30 border border-zinc-800/80 space-y-3.5 animate-enter">
-            <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl text-zinc-400 shadow-inner">
-              ⚡
-            </div>
-            <div class="space-y-1">
-              <div class="font-mono text-sm font-bold text-white tracking-wide">لا يوجد Agents شغالة في الخلفية حالياً</div>
-              <div class="font-mono text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-                الاوركستراتور جاهز في الشات. لما ترسل أمر يتطلب تشغيل Subagents بالتوازي، هتظهر كروتها الحية هنا فوراً وهي بتنفذ العمليات.
+        if (!document.getElementById('empty-running-placeholder')) {
+          grid.innerHTML = `
+            <div id="empty-running-placeholder" class="col-span-1 md:col-span-2 flex flex-col items-center justify-center p-10 text-center rounded-2xl bg-black/30 border border-zinc-800/80 space-y-3.5">
+              <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl text-zinc-400 shadow-inner">
+                ⚡
+              </div>
+              <div class="space-y-1">
+                <div class="font-mono text-sm font-bold text-white tracking-wide">لا يوجد Agents شغالة في الخلفية حالياً</div>
+                <div class="font-mono text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+                  الاوركستراتور جاهز في الشات. لما ترسل أمر يتطلب تشغيل Subagents بالتوازي، هتظهر كروتها الحية هنا فوراً وهي بتنفذ العمليات.
+                </div>
+              </div>
+              <div class="pt-2 flex flex-wrap items-center justify-center gap-2">
+                <button onclick="setStageTab('completed')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
+                  <span>عرض الايجنتس المكتملة (${completedSubagents.length})</span> ↗
+                </button>
+                <button onclick="setStageTab('worktrees')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
+                  <span>عرض الـ Git Worktrees (${swarmWorktrees.length})</span> ↗
+                </button>
               </div>
             </div>
-            <div class="pt-2 flex flex-wrap items-center justify-center gap-2">
-              <button onclick="setStageTab('completed')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
-                <span>عرض الايجنتس المكتملة (${completedSubagents.length})</span> ↗
-              </button>
-              <button onclick="setStageTab('worktrees')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
-                <span>عرض الـ Git Worktrees (${swarmWorktrees.length})</span> ↗
-              </button>
-            </div>
-          </div>
-        `;
+          `;
+        }
         return;
+      } else {
+        const ph = document.getElementById('empty-running-placeholder');
+        if (ph) ph.remove();
       }
 
       // 2. Build cardsData depending on the active tab
@@ -669,7 +691,7 @@
           // CREATE ONCE
           const div = document.createElement('div');
           div.id = card.id;
-          div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-indigo-500/60 hover:bg-zinc-900/60 transition shadow-md space-y-2.5 animate-enter cursor-pointer group";
+          div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-indigo-500/60 hover:bg-zinc-900/60 transition shadow-md space-y-2.5 cursor-pointer group";
           div.onclick = () => openCardInspector(card.id);
 
           let middleContent = '';
