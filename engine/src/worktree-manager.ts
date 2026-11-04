@@ -130,12 +130,20 @@ export function createSwarm(
   return swarm;
 }
 
-export function getSwarmStatus(swarmId?: string, projectPath?: string): SwarmInfo[] {
-  if (projectPath) {
-    loadPersistedSwarms(projectPath);
+export function getSwarmStatus(swarmIdOrPath?: string, projectPath?: string): SwarmInfo[] {
+  let id = swarmIdOrPath;
+  let projPath = projectPath;
+
+  if (swarmIdOrPath && (swarmIdOrPath.includes("/") || swarmIdOrPath.includes("\\") || fs.existsSync(swarmIdOrPath))) {
+    projPath = swarmIdOrPath;
+    id = undefined;
   }
-  if (swarmId) {
-    const swarm = swarms.get(swarmId);
+
+  if (projPath) {
+    loadPersistedSwarms(projPath);
+  }
+  if (id) {
+    const swarm = swarms.get(id);
     return swarm ? [swarm] : [];
   }
   return Array.from(swarms.values());
@@ -158,6 +166,8 @@ export function updateWorktreeStatus(
 export function destroySwarm(swarmId: string, projectPath?: string): { success: boolean; message: string } {
   if (projectPath) {
     loadPersistedSwarms(projectPath);
+  } else {
+    loadPersistedSwarms(process.cwd());
   }
   const swarm = swarms.get(swarmId);
   if (!swarm) {

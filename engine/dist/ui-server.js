@@ -180,6 +180,16 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     if (swarms.length > 0 && orchestratorPhase === "idle") {
                         orchestratorPhase = "orchestrating";
                     }
+                    let activePlan = currentSwarmPlan;
+                    if (Object.keys(activePlan).length === 0) {
+                        const planEntry = bbEntries.find((e) => e.topic === "architecture:plan");
+                        if (planEntry && planEntry.value) {
+                            try {
+                                activePlan = JSON.parse(planEntry.value);
+                            }
+                            catch { }
+                        }
+                    }
                     res.writeHead(200, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({
                         success: true,
@@ -197,7 +207,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                         swarms,
                         totalWorktrees,
                         isPaused: isSwarmPaused,
-                        plan: currentSwarmPlan,
+                        plan: activePlan,
                         blackboard: {
                             entries: bbEntries,
                             stats: bbStats,

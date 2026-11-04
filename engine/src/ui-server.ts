@@ -194,6 +194,16 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
             orchestratorPhase = "orchestrating";
           }
 
+          let activePlan = currentSwarmPlan;
+          if (Object.keys(activePlan).length === 0) {
+            const planEntry = bbEntries.find((e: any) => e.topic === "architecture:plan");
+            if (planEntry && planEntry.value) {
+              try {
+                activePlan = JSON.parse(planEntry.value);
+              } catch {}
+            }
+          }
+
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(
             JSON.stringify({
@@ -212,7 +222,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
               swarms,
               totalWorktrees,
               isPaused: isSwarmPaused,
-              plan: currentSwarmPlan,
+              plan: activePlan,
               blackboard: {
                 entries: bbEntries,
                 stats: bbStats,

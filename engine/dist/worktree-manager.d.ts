@@ -16,7 +16,7 @@ export interface SwarmInfo {
     createdAt: number;
 }
 export declare function createSwarm(projectPath: string, roles: string[], baseBranch?: string): SwarmInfo;
-export declare function getSwarmStatus(swarmId?: string, projectPath?: string): SwarmInfo[];
+export declare function getSwarmStatus(swarmIdOrPath?: string, projectPath?: string): SwarmInfo[];
 export declare function updateWorktreeStatus(swarmId: string, role: string, status: WorktreeInfo["status"]): boolean;
 export declare function destroySwarm(swarmId: string, projectPath?: string): {
     success: boolean;
