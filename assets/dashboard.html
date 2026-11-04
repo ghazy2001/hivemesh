@@ -192,10 +192,27 @@
       if (pEl) pEl.innerText = `"${prompt}"`;
 
       const sizeEl = document.getElementById('sizing-badge');
-      if (sizeEl) sizeEl.innerText = `SIZED: ${roles.length} PARALLEL DOMAINS`;
+      if (sizeEl) {
+        sizeEl.innerText = `SIZING DOMAINS...`;
+        sizeEl.className = "text-indigo-300 text-[11px] font-semibold bg-indigo-500/15 px-2 py-0.5 rounded border border-indigo-500/30 animate-pulse";
+      }
 
       const wtEl = document.getElementById('worktree-badge');
-      if (wtEl) wtEl.innerText = `ALLOCATING WORKTREES...`;
+      if (wtEl) {
+        wtEl.innerText = `QUEUED...`;
+        wtEl.className = "text-zinc-500 text-[11px] font-semibold bg-zinc-800 px-2 py-0.5 rounded";
+      }
+
+      setTimeout(() => {
+        if (sizeEl) {
+          sizeEl.innerText = `SIZED: ${roles.length} PARALLEL DOMAINS (${roles.join(', ')})`;
+          sizeEl.className = "text-emerald-400 text-[11px] font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
+        }
+        if (wtEl) {
+          wtEl.innerText = `ALLOCATING ${roles.length} WORKTREES...`;
+          wtEl.className = "text-amber-400 text-[11px] font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse";
+        }
+      }, 900);
     }
 
     function renderActiveSwarm(swarm, plan, promptText) {
@@ -267,9 +284,16 @@
             const data = JSON.parse(e.data);
             currentPlan = data.plan || {};
             activeSwarm = data.swarm;
+
+            const wtEl = document.getElementById('worktree-badge');
+            if (wtEl) {
+              wtEl.innerText = `WORKTREES ALLOCATED ✓`;
+              wtEl.className = "text-emerald-400 text-[11px] font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
+            }
+
             setTimeout(() => {
               renderActiveSwarm(activeSwarm, currentPlan, data.prompt);
-            }, 1000);
+            }, 800);
           } catch (err) {
             console.error(err);
           }
