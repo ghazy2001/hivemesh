@@ -8,6 +8,7 @@ import * as http from "http";
 export interface BrainConversation {
     id: string;
     mtime: number;
+    title: string;
 }
 export interface BrainOperation {
     id: string;
@@ -39,6 +40,7 @@ export interface BrainSubagent {
 }
 export interface BrainState {
     activeId: string;
+    activeTitle: string;
     allConvs: BrainConversation[];
     prompt: string;
     recentOps: BrainOperation[];

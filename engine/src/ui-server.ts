@@ -35,9 +35,11 @@ let pinnedConversationId: string | null = null;
 export interface BrainConversation {
   id: string;
   mtime: number;
+  title: string;
 }
 
 const hiveMeshConvCache = new Map<string, { mtime: number; isHive: boolean }>();
+const sessionTitleCache = new Map<string, string>();
 
 function isHiveMeshTranscript(id: string, tPath: string, mtime: number): boolean {
   const cached = hiveMeshConvCache.get(id);
@@ -53,6 +55,67 @@ function isHiveMeshTranscript(id: string, tPath: string, mtime: number): boolean
     hiveMeshConvCache.set(id, { mtime, isHive: false });
     return false;
   }
+}
+
+function getSessionTitle(id: string, brainDir: string): string {
+  if (sessionTitleCache.has(id)) {
+    return sessionTitleCache.get(id)!;
+  }
+
+  // 1. Check if it's a known subagent descriptor
+  try {
+    const parentDirs = fs.readdirSync(brainDir);
+    for (const d of parentDirs) {
+      const sp = path.join(brainDir, d, ".system_generated", "subagents", `${id}.json`);
+      if (fs.existsSync(sp)) {
+        const json = JSON.parse(fs.readFileSync(sp, "utf-8"));
+        if (json.subagentDescriptor?.role) {
+          const role = String(json.subagentDescriptor.role).trim();
+          sessionTitleCache.set(id, role);
+          return role;
+        }
+      }
+    }
+  } catch {}
+
+  // 2. Check chapter_titles
+  const baseDir = path.dirname(brainDir);
+  const pbPath = path.join(baseDir, "chapter_titles", `${id}.pb`);
+  if (fs.existsSync(pbPath)) {
+    try {
+      const buf = fs.readFileSync(pbPath);
+      const str = buf.toString("utf-8");
+      const matches = str.match(/[A-Z][a-zA-Z0-9\s,-]{6,50}/g);
+      if (matches && matches.length > 0) {
+        const title = matches[0].trim();
+        sessionTitleCache.set(id, title);
+        return title;
+      }
+    } catch {}
+  }
+
+  // 3. Fallback: check first user prompt in transcript
+  const tPath = path.join(brainDir, id, ".system_generated", "logs", "transcript.jsonl");
+  if (fs.existsSync(tPath)) {
+    try {
+      const lines = fs.readFileSync(tPath, "utf-8").trim().split("\n");
+      for (const l of lines) {
+        const s = JSON.parse(l);
+        if (s.type === "USER_INPUT" && s.content) {
+          const m = s.content.match(/<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/);
+          const p = (m ? m[1] : s.content).trim().split("\n")[0].slice(0, 35).trim();
+          if (p) {
+            sessionTitleCache.set(id, p);
+            return p;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  const fallback = `HiveMesh Session #${id.slice(0, 8)}`;
+  sessionTitleCache.set(id, fallback);
+  return fallback;
 }
 
 export interface BrainOperation {
@@ -88,6 +151,7 @@ export interface BrainSubagent {
 
 export interface BrainState {
   activeId: string;
+  activeTitle: string;
   allConvs: BrainConversation[];
   prompt: string;
   recentOps: BrainOperation[];
@@ -332,7 +396,12 @@ export function getAntigravityBrainState(selectedId?: string): BrainState | null
 
     return {
       activeId: target.id,
-      allConvs: convs.slice(0, 8).map((c) => ({ id: c.id, mtime: c.mtime })),
+      activeTitle: getSessionTitle(target.id, brainDir),
+      allConvs: convs.slice(0, 10).map((c) => ({
+        id: c.id,
+        mtime: c.mtime,
+        title: getSessionTitle(c.id, brainDir)
+      })),
       prompt,
       recentOps: operations.slice(-50),
       subagents,

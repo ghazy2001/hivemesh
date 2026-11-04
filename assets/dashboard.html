@@ -455,31 +455,35 @@
       const container = document.getElementById('conversations-chips');
       if (!container) return;
 
-      const chipsHash = convs.map(c => c.id + ':' + c.mtime).join(',') + '|' + activeId;
+      const chipsHash = convs.map(c => c.id + ':' + (c.title || '')).join(',') + '|' + activeId;
       if (chipsHash === lastRenderedChipsHash) return;
       lastRenderedChipsHash = chipsHash;
 
       container.innerHTML = convs.map(c => {
         const isCurrent = (c.id === activeId);
-        const shortId = c.id.slice(0, 8);
+        const title = c.title || `#${c.id.slice(0, 8)}`;
         const activeClass = isCurrent
           ? "bg-indigo-600 text-white font-bold border-indigo-400 shadow"
           : "bg-black/40 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700";
 
         return `
-          <button onclick="selectConversation('${c.id}')" class="px-2 py-0.5 rounded text-[10px] font-mono border transition cursor-pointer flex items-center gap-1 ${activeClass}">
-            ${isCurrent ? '<span class="w-1 h-1 rounded-full bg-emerald-400"></span>' : ''}
-            <span>#${shortId}</span>
+          <button onclick="selectConversation('${c.id}')" title="#${c.id.slice(0, 8)} • ${escapeHtml(title)}" class="px-2.5 py-1 rounded-lg text-[10px] font-mono border transition cursor-pointer flex items-center gap-1.5 ${activeClass}">
+            ${isCurrent ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>' : ''}
+            <span class="truncate max-w-[210px]">${escapeHtml(title)}</span>
           </button>
         `;
       }).join('');
     }
 
     function renderLeftDeck(brain) {
-      // Update Conversation ID badge
+      // Update Conversation ID badge with friendly session title
       const convBadge = document.getElementById('current-conv-id');
-      if (convBadge && convBadge.innerText !== `#${brain.activeId}`) {
-        convBadge.innerText = `#${brain.activeId}`;
+      if (convBadge) {
+        const displayTitle = brain.activeTitle || `#${brain.activeId.slice(0, 8)}`;
+        if (convBadge.innerText !== displayTitle) {
+          convBadge.innerText = displayTitle;
+          convBadge.title = `Session #${brain.activeId}`;
+        }
       }
 
       // Update Prompt (In-place)
