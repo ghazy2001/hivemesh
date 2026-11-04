@@ -3,585 +3,216 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HiveMesh Mission Control Studio</title>
+  <title>HiveMesh Mission Control</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
-    /* ==========================================================================
-       HIVEMESH STUDIO DESIGN SYSTEM (Linear / Vercel Dark Aesthetic)
-       ========================================================================== */
     :root {
       --bg: #09090b;
-      --sidebar: #101012;
-      --card: #141417;
-      --card-hover: #19191d;
-      --border: #222227;
-      --border-bright: #32323a;
+      --card: #121215;
+      --card-inner: #18181c;
+      --border: #222226;
+      --border-bright: #303038;
       --foreground: #f4f4f5;
-      --muted: #1c1c20;
-      --muted-foreground: #9ca3af;
-      --accent: #6366f1; /* Indigo Linear */
-      --accent-glow: rgba(99, 102, 241, 0.25);
+      --muted: #71717a;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     [data-theme="emerald"] {
-      --bg: #040806;
-      --sidebar: #08110b;
-      --card: #0c1811;
-      --card-hover: #112217;
-      --border: #142e1e;
-      --border-bright: #1f472f;
+      --bg: #030705;
+      --card: #09120c;
+      --card-inner: #0f1c14;
+      --border: #14281c;
+      --border-bright: #1f3d2b;
       --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.25);
-    }
-
-    [data-theme="amber"] {
-      --bg: #090704;
-      --sidebar: #130f08;
-      --card: #1a140b;
-      --card-hover: #241c10;
-      --border: #322513;
-      --border-bright: #4d3a1f;
-      --accent: #f59e0b;
-      --accent-glow: rgba(245, 158, 11, 0.25);
+      --accent-glow: rgba(16, 185, 129, 0.15);
     }
 
     [data-theme="oled"] {
       --bg: #000000;
-      --sidebar: #070707;
-      --card: #0c0c0d;
-      --card-hover: #121214;
-      --border: #1a1a1d;
-      --border-bright: #29292e;
+      --card: #080808;
+      --card-inner: #101010;
+      --border: #1a1a1a;
+      --border-bright: #262626;
       --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.25);
+      --accent-glow: rgba(56, 189, 248, 0.15);
     }
 
-    /* Living Synapse Animations */
-    @keyframes synapse-flow {
-      to {
-        stroke-dashoffset: -40;
-      }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
     }
-    .synapse-line {
-      stroke-dasharray: 6 6;
-      animation: synapse-flow 1.5s linear infinite;
-    }
-    .synapse-p2p {
-      stroke-dasharray: 4 4;
-      animation: synapse-flow 1s linear infinite;
-    }
-
-    /* Status Pulse */
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.15); opacity: 0.3; }
-      100% { transform: scale(0.95); opacity: 0.8; }
-    }
-    .status-ring {
-      animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    /* Scrollbars */
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--border-bright);
+    .status-dot {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
   </style>
 </head>
-<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased font-sans h-screen flex overflow-hidden selection:bg-indigo-500/20">
+<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen p-4 md:p-8 font-sans selection:bg-indigo-500/20 transition-colors duration-200">
 
-  <!-- =========================================================================
-       1. LEFT WORKSPACE SIDEBAR
-       ========================================================================= -->
-  <aside class="w-64 border-r border-[var(--border)] bg-[var(--sidebar)] flex flex-col justify-between shrink-0 select-none">
-    
-    <div>
-      <!-- Brand & Project -->
-      <div class="p-4 border-b border-[var(--border)]">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-base shadow-inner">
-            🐝
-          </div>
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <span class="font-bold text-sm tracking-tight text-[var(--foreground)]">HiveMesh</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">v0.3.0</span>
-            </div>
-            <div class="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1 mt-0.5 font-mono">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              twenty-crm
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="max-w-4xl mx-auto space-y-6">
 
-      <!-- Swarm Status Summary Widget -->
-      <div class="p-3 border-b border-[var(--border)] bg-[var(--card)]/40">
-        <div class="flex items-center justify-between text-[11px] font-medium text-[var(--muted-foreground)] mb-2">
-          <span>ACTIVE SWARM</span>
-          <span class="text-emerald-400 font-mono text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Elastic N=4</span>
-        </div>
-        <div class="space-y-1 text-xs font-mono">
-          <div class="flex justify-between items-center text-[var(--foreground)]">
-            <span class="text-[var(--muted-foreground)]">ID:</span>
-            <span id="sb-swarm-id" class="text-zinc-300">swarm_01</span>
-          </div>
-          <div class="flex justify-between items-center text-[var(--foreground)]">
-            <span class="text-[var(--muted-foreground)]">Base Branch:</span>
-            <span class="text-indigo-400">main</span>
-          </div>
-          <div class="flex justify-between items-center text-[var(--foreground)]">
-            <span class="text-[var(--muted-foreground)]">Worktrees:</span>
-            <span class="text-emerald-400">4 Isolated</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Navigation Links -->
-      <nav class="p-2 space-y-1 text-xs font-medium">
-        <button onclick="setTab('topology')" id="nav-topology" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] transition">
-          <span class="text-indigo-400">🌐</span>
-          <span>Topology Mesh</span>
-        </button>
-        <button onclick="setTab('ast')" id="nav-ast" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg hover:bg-[var(--card)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
-          <span class="text-emerald-400">🛡️</span>
-          <span>AST Safety Radar</span>
-        </button>
-        <button onclick="setTab('blackboard')" id="nav-blackboard" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg hover:bg-[var(--card)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
-          <span class="text-purple-400">🧠</span>
-          <span>Blackboard FTS5</span>
-        </button>
-        <button onclick="setTab('selfplay')" id="nav-selfplay" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg hover:bg-[var(--card)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
-          <span class="text-rose-400">⚔️</span>
-          <span>Red Team (Self-Play)</span>
-        </button>
-      </nav>
-    </div>
-
-    <!-- Sidebar Footer -->
-    <div class="p-3 border-t border-[var(--border)] text-[11px] font-mono text-[var(--muted-foreground)] space-y-1">
-      <div class="flex justify-between">
-        <span>Engine:</span>
-        <span class="text-zinc-300">Node.js 24 FTS5</span>
-      </div>
-      <div class="flex justify-between">
-        <span>AST Bus:</span>
-        <span class="text-emerald-400">TypeScript 5.7</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- =========================================================================
-       2. MAIN CONTENT STAGE
-       ========================================================================= -->
-  <main class="flex-1 flex flex-col min-w-0 bg-[var(--bg)] overflow-hidden">
-    
-    <!-- Top Action Bar -->
-    <header class="h-14 border-b border-[var(--border)] bg-[var(--card)]/60 px-6 flex items-center justify-between shrink-0">
-      
-      <!-- Left: Breadcrumb / Status -->
+    <!-- =======================================================================
+         1. CLEAN HEADER BAR
+         ======================================================================= -->
+    <header class="flex items-center justify-between pb-4 border-b border-[var(--border)]">
       <div class="flex items-center space-x-3">
-        <div class="flex items-center space-x-2 text-xs">
-          <span class="text-[var(--muted-foreground)] font-mono">Workspace</span>
-          <span class="text-[var(--border-bright)]">/</span>
-          <span class="font-semibold text-[var(--foreground)]" id="header-title">Swarm Mission Control</span>
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-[var(--border-bright)] flex items-center justify-center text-lg shadow-sm">
+          🐝
         </div>
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-        <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-          Live Connected
-        </span>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base font-semibold tracking-tight text-[var(--foreground)]">HiveMesh</h1>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-[var(--card)] text-zinc-400 border border-[var(--border)] font-mono">v0.3.0</span>
+          </div>
+          <div class="flex items-center space-x-2 text-xs font-mono text-[var(--muted)] mt-0.5">
+            <span id="proj-name">Loading project...</span>
+            <span>•</span>
+            <span class="text-indigo-400 font-medium" id="proj-branch">main</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Right: Interactive Swarm Controls & Palette -->
-      <div class="flex items-center space-x-2.5">
-        
-        <!-- Live Action Buttons -->
-        <button onclick="triggerRedTeamAttack()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 transition flex items-center gap-1.5 shadow-sm active:scale-95">
-          <span>⚔️</span>
-          <span>Trigger Red Team</span>
-        </button>
+      <div class="flex items-center space-x-3">
+        <!-- Live SSE Indicator -->
+        <div class="flex items-center space-x-1.5 text-xs font-mono px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-zinc-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 status-dot" id="live-dot"></span>
+          <span id="live-status">Connected</span>
+        </div>
 
-        <button onclick="triggerASTAudit()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition flex items-center gap-1.5 shadow-sm active:scale-95">
-          <span>🛡️</span>
-          <span>Audit AST</span>
-        </button>
-
-        <button onclick="previewMerge()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 transition flex items-center gap-1.5 shadow-sm active:scale-95">
-          <span>✨</span>
-          <span>Simulate Merge</span>
-        </button>
-
-        <!-- Divider -->
-        <div class="h-4 w-[1px] bg-[var(--border)]"></div>
-
-        <!-- Theme Picker -->
-        <div class="flex items-center bg-[var(--sidebar)] border border-[var(--border)] rounded-lg p-1 space-x-1">
-          <button onclick="changeTheme('default')" title="Linear Indigo" class="w-3.5 h-3.5 rounded-full bg-indigo-500 hover:ring-2 ring-indigo-400 transition"></button>
-          <button onclick="changeTheme('emerald')" title="Emerald Terminal" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:ring-2 ring-emerald-400 transition"></button>
-          <button onclick="changeTheme('amber')" title="Cyber Amber" class="w-3.5 h-3.5 rounded-full bg-amber-500 hover:ring-2 ring-amber-400 transition"></button>
+        <!-- Minimal Palette -->
+        <div class="flex items-center bg-[var(--card)] border border-[var(--border)] rounded-lg p-1 space-x-1">
+          <button onclick="changeTheme('default')" title="Indigo" class="w-3.5 h-3.5 rounded-full bg-indigo-500 hover:ring-2 ring-indigo-400 transition"></button>
+          <button onclick="changeTheme('emerald')" title="Emerald" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:ring-2 ring-emerald-400 transition"></button>
           <button onclick="changeTheme('oled')" title="OLED Cyan" class="w-3.5 h-3.5 rounded-full bg-sky-400 hover:ring-2 ring-sky-300 transition"></button>
         </div>
 
+        <button onclick="fetchStatus()" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-[var(--card)] hover:bg-[var(--card-inner)] border border-[var(--border)] text-zinc-300 transition active:scale-95">
+          Refresh
+        </button>
       </div>
     </header>
 
-    <!-- Center Workspace Area (Split between View and Live Stream) -->
-    <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-      
-      <!-- Top Half: Active Tab View (Dynamic Canvas) -->
-      <div class="flex-1 p-5 overflow-y-auto">
-        
-        <!-- ===================================================================
-             VIEW 1: TOPOLOGY MESH CANVAS & INSPECTOR
-             =================================================================== -->
-        <div id="view-topology" class="space-y-4">
-          
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            
-            <!-- Canvas Graph (2 Cols) -->
-            <div class="lg:col-span-2 border border-[var(--border)] rounded-xl bg-[var(--card)] p-4 flex flex-col justify-between relative shadow-xl overflow-hidden min-h-[300px]">
-              
-              <!-- Subtle Radial Glow in Center -->
-              <div class="absolute inset-0 bg-radial-gradient from-indigo-500/5 via-transparent to-transparent pointer-events-none"></div>
-
-              <!-- Canvas Header Stats -->
-              <div class="flex items-center justify-between text-xs font-mono text-[var(--muted-foreground)] z-10">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-indigo-400 status-ring"></span>
-                  Parallel Swarm Mesh (N = 4)
-                </span>
-                <span>P2P Contract: <strong class="text-indigo-400">ACTIVE</strong></span>
-              </div>
-
-              <!-- SVG Topology Graph -->
-              <div class="my-auto py-2">
-                <svg viewBox="0 0 620 210" class="w-full h-auto max-h-[220px]" id="topology-svg">
-                  <!-- Connectors with Living Synapse Animation -->
-                  <line x1="310" y1="105" x2="110" y2="50" stroke="var(--border-bright)" stroke-width="1.5" class="synapse-line" stroke-opacity="0.8"/>
-                  <line x1="310" y1="105" x2="510" y2="50" stroke="var(--border-bright)" stroke-width="1.5" class="synapse-line" stroke-opacity="0.8"/>
-                  <line x1="310" y1="105" x2="110" y2="160" stroke="var(--border-bright)" stroke-width="1.5" class="synapse-line" stroke-opacity="0.8"/>
-                  <line x1="310" y1="105" x2="510" y2="160" stroke="var(--border-bright)" stroke-width="1.5" class="synapse-line" stroke-opacity="0.8"/>
-
-                  <!-- P2P Inter-Agent Typed Contract Bridge -->
-                  <path d="M 110 50 Q 310 15 510 50" fill="none" stroke="var(--accent)" stroke-width="2" class="synapse-p2p" stroke-opacity="0.9"/>
-                  <rect x="235" y="10" width="150" height="18" rx="4" fill="var(--sidebar)" stroke="var(--accent)" stroke-width="1"/>
-                  <text x="310" y="22" text-anchor="middle" fill="var(--accent)" font-size="9" font-family="monospace" font-weight="bold">CONTRACT: WebAuthnAssertion</text>
-
-                  <!-- Center Node: Master Orchestrator -->
-                  <g class="cursor-pointer transition transform hover:scale-105" onclick="selectAgent('master')">
-                    <circle cx="310" cy="105" r="30" fill="var(--sidebar)" stroke="var(--accent)" stroke-width="3" filter="drop-shadow(0 0 10px var(--accent-glow))"/>
-                    <text x="310" y="102" text-anchor="middle" fill="#ffffff" font-size="14">👑</text>
-                    <text x="310" y="117" text-anchor="middle" fill="#a1a1aa" font-size="8" font-family="monospace" font-weight="bold">ORCHESTRATOR</text>
-                  </g>
-
-                  <!-- Node 1: Backend Builder -->
-                  <g class="cursor-pointer transition transform hover:scale-105" onclick="selectAgent('backend')">
-                    <circle cx="110" cy="50" r="24" fill="var(--sidebar)" stroke="#3b82f6" stroke-width="2.5"/>
-                    <text x="110" y="55" text-anchor="middle" fill="#93c5fd" font-size="11" font-weight="bold">API</text>
-                    <text x="110" y="85" text-anchor="middle" fill="#71717a" font-size="9" font-family="monospace">backend</text>
-                  </g>
-
-                  <!-- Node 2: Frontend Builder -->
-                  <g class="cursor-pointer transition transform hover:scale-105" onclick="selectAgent('frontend')">
-                    <circle cx="510" cy="50" r="24" fill="var(--sidebar)" stroke="#a855f7" stroke-width="2.5"/>
-                    <text x="510" y="55" text-anchor="middle" fill="#d8b4fe" font-size="11" font-weight="bold">UI</text>
-                    <text x="510" y="85" text-anchor="middle" fill="#71717a" font-size="9" font-family="monospace">frontend</text>
-                  </g>
-
-                  <!-- Node 3: Database Builder -->
-                  <g class="cursor-pointer transition transform hover:scale-105" onclick="selectAgent('database')">
-                    <circle cx="110" cy="160" r="24" fill="var(--sidebar)" stroke="#10b981" stroke-width="2.5"/>
-                    <text x="110" y="165" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="bold">DB</text>
-                    <text x="110" y="195" text-anchor="middle" fill="#71717a" font-size="9" font-family="monospace">database</text>
-                  </g>
-
-                  <!-- Node 4: Adversary Red Team -->
-                  <g class="cursor-pointer transition transform hover:scale-105" id="adversary-node" onclick="selectAgent('security')">
-                    <circle cx="510" cy="160" r="24" fill="var(--sidebar)" stroke="#f43f5e" stroke-width="2.5"/>
-                    <text x="510" y="165" text-anchor="middle" fill="#fda4af" font-size="11" font-weight="bold">RED</text>
-                    <text x="510" y="195" text-anchor="middle" fill="#71717a" font-size="9" font-family="monospace">security</text>
-                  </g>
-                </svg>
-              </div>
-
-              <!-- Canvas Footer -->
-              <div class="text-[11px] font-mono text-[var(--muted-foreground)] flex items-center justify-between z-10 border-t border-[var(--border)] pt-2.5">
-                <span>Click any agent node to inspect isolated worktree state</span>
-                <span class="text-emerald-400">0 AST Conflicts</span>
-              </div>
-            </div>
-
-            <!-- Right Inspector Drawer (1 Col) -->
-            <div class="border border-[var(--border)] rounded-xl bg-[var(--card)] p-4 flex flex-col justify-between shadow-xl">
-              <div>
-                <div class="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-                  <div class="flex items-center space-x-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400" id="insp-dot"></span>
-                    <h3 class="text-sm font-semibold text-[var(--foreground)]" id="insp-name">Backend Builder</h3>
-                  </div>
-                  <span class="text-[10px] font-mono bg-[var(--sidebar)] border border-[var(--border)] px-2 py-0.5 rounded text-zinc-300" id="insp-role">API Worker</span>
-                </div>
-
-                <div class="py-3 space-y-3 text-xs">
-                  <div>
-                    <label class="text-[11px] text-[var(--muted-foreground)] font-mono">TASK OBJECTIVE</label>
-                    <p class="text-[var(--foreground)] mt-0.5 leading-relaxed" id="insp-task">Implementing WebAuthn assertion handlers & session refresh tokens</p>
-                  </div>
-
-                  <div>
-                    <label class="text-[11px] text-[var(--muted-foreground)] font-mono">ISOLATED GIT BRANCH</label>
-                    <div class="mt-0.5 text-indigo-400 font-mono text-[11px] bg-[var(--sidebar)] px-2 py-1 rounded border border-[var(--border)] truncate" id="insp-branch">
-                      hivemesh/swarm_01/backend
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="text-[11px] text-[var(--muted-foreground)] font-mono">WORKTREE DIRECTORY</label>
-                    <div class="mt-0.5 text-zinc-400 font-mono text-[11px] bg-[var(--sidebar)] px-2 py-1 rounded border border-[var(--border)] truncate" id="insp-path">
-                      d:\twenty-crm-backend
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-                    <div class="bg-[var(--sidebar)]/50 p-2 rounded border border-[var(--border)]">
-                      <span class="text-[var(--muted-foreground)] block">Commits</span>
-                      <strong class="text-emerald-400" id="insp-commits">3 Clean</strong>
-                    </div>
-                    <div class="bg-[var(--sidebar)]/50 p-2 rounded border border-[var(--border)]">
-                      <span class="text-[var(--muted-foreground)] block">AST Status</span>
-                      <strong class="text-emerald-400">Verified Green</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pt-3 border-t border-[var(--border)]">
-                <button onclick="logWorktreeDiff()" class="w-full text-xs font-mono py-1.5 px-3 rounded-lg bg-[var(--sidebar)] hover:bg-zinc-800 border border-[var(--border)] text-[var(--foreground)] transition flex items-center justify-center gap-1.5">
-                  <span>Inspect Branch Git Diff</span>
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- ===================================================================
-             VIEW 2: AST RADAR
-             =================================================================== -->
-        <div id="view-ast" class="hidden space-y-3">
-          <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-            <div>
-              <h2 class="text-sm font-semibold text-[var(--foreground)]">TypeScript Compiler AST Semantic Radar</h2>
-              <p class="text-xs text-[var(--muted-foreground)]">Cross-worktree symbol signature watcher. Catches breaking exported types before merge.</p>
-            </div>
-            <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
-              0 Breaking Regressions
-            </span>
-          </div>
-
-          <div class="space-y-2 font-mono text-xs">
-            <div class="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] flex justify-between items-center hover:border-[var(--border-bright)] transition">
-              <div class="flex items-center space-x-3">
-                <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">SAFE</span>
-                <span class="text-[var(--foreground)]">getUserProfile(userId: string): Promise&lt;UserProfile&gt;</span>
-              </div>
-              <span class="text-[var(--muted-foreground)]">packages/twenty-server/src/auth.service.ts</span>
-            </div>
-
-            <div class="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] flex justify-between items-center hover:border-[var(--border-bright)] transition">
-              <div class="flex items-center space-x-3">
-                <span class="text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">ADD</span>
-                <span class="text-[var(--foreground)]">interface PasskeyCredential { credentialId: string; counter: number }</span>
-              </div>
-              <span class="text-[var(--muted-foreground)]">packages/twenty-shared/src/types/passkey.ts</span>
-            </div>
-
-            <div class="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] flex justify-between items-center hover:border-[var(--border-bright)] transition">
-              <div class="flex items-center space-x-3">
-                <span class="text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">ADD</span>
-                <span class="text-[var(--foreground)]">verifyAssertion(challenge: string, response: AuthenticatorAssertionResponse)</span>
-              </div>
-              <span class="text-[var(--muted-foreground)]">packages/twenty-server/src/auth.resolver.ts</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===================================================================
-             VIEW 3: SHARED BLACKBOARD (FTS5)
-             =================================================================== -->
-        <div id="view-blackboard" class="hidden space-y-3">
-          <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-            <div>
-              <h2 class="text-sm font-semibold text-[var(--foreground)]">SQLite FTS5 Shared Memory Blackboard</h2>
-              <p class="text-xs text-[var(--muted-foreground)]">Full-text search with BM25 ranking. Sub-millisecond architecture sharing across swarms.</p>
-            </div>
-            <div class="w-72">
-              <input type="text" id="bb-search" oninput="searchBB()" placeholder="Search knowledge (FTS5 BM25)..." 
-                class="w-full text-xs px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-indigo-500 font-mono transition">
-            </div>
-          </div>
-
-          <div id="bb-items" class="space-y-2.5 text-xs">
-            <div class="bb-card p-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] flex justify-between items-start hover:border-[var(--border-bright)] transition" data-key="auth passport jwt guard">
-              <div class="space-y-1">
-                <span class="font-mono text-indigo-400 font-semibold text-[11px] bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">architecture:auth</span>
-                <p class="text-[var(--foreground)] leading-relaxed">Twenty CRM uses Passport with custom workspace tenancy guards & JWT sessions. Do not bypass WorkspaceAuthGuard on API resolvers.</p>
-              </div>
-              <span class="text-[10px] text-zinc-400 font-mono bg-[var(--sidebar)] px-2 py-1 rounded border border-[var(--border)]">posted by backend</span>
-            </div>
-
-            <div class="bb-card p-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] flex justify-between items-start hover:border-[var(--border-bright)] transition" data-key="database postgres typeorm migrations">
-              <div class="space-y-1">
-                <span class="font-mono text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">database:orm</span>
-                <p class="text-[var(--foreground)] leading-relaxed">TypeORM handles PostgreSQL schema migrations. New Passkey entities must extend the WorkspaceBaseEntity class.</p>
-              </div>
-              <span class="text-[10px] text-zinc-400 font-mono bg-[var(--sidebar)] px-2 py-1 rounded border border-[var(--border)]">posted by database</span>
-            </div>
-
-            <div class="bb-card p-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] flex justify-between items-start hover:border-[var(--border-bright)] transition" data-key="frontend apollo graphql reactive">
-              <div class="space-y-1">
-                <span class="font-mono text-purple-400 font-semibold text-[11px] bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">frontend:state</span>
-                <p class="text-[var(--foreground)] leading-relaxed">Apollo Client React hooks manage query caching. Passkey modals must invoke the useMutation(VerifyAssertionDocument) hook.</p>
-              </div>
-              <span class="text-[10px] text-zinc-400 font-mono bg-[var(--sidebar)] px-2 py-1 rounded border border-[var(--border)]">posted by frontend</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===================================================================
-             VIEW 4: RED TEAM (SELF-PLAY)
-             =================================================================== -->
-        <div id="view-selfplay" class="hidden space-y-3">
-          <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-            <div>
-              <h2 class="text-sm font-semibold text-[var(--foreground)]">Automated Adversarial Self-Play Lab</h2>
-              <p class="text-xs text-[var(--muted-foreground)]">Red-Team agent actively attacks builder code with race condition, replay, and input fuzzing.</p>
-            </div>
-            <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
-              100% Robustness (19/19 Tests Passed)
-            </span>
-          </div>
-
-          <div class="grid grid-cols-3 gap-3 font-mono text-xs">
-            <div class="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-center">
-              <span class="text-[var(--muted-foreground)] text-[11px] block">Attacks Executed</span>
-              <strong class="text-base text-[var(--foreground)] mt-1 block">19 Vectors</strong>
-            </div>
-            <div class="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-center">
-              <span class="text-[var(--muted-foreground)] text-[11px] block">Vulnerabilities Patched</span>
-              <strong class="text-base text-emerald-400 mt-1 block">1 Fixed (Round 2)</strong>
-            </div>
-            <div class="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-center">
-              <span class="text-[var(--muted-foreground)] text-[11px] block">Average Fuzz Latency</span>
-              <strong class="text-base text-indigo-400 mt-1 block">52ms</strong>
-            </div>
-          </div>
-
-          <div class="space-y-2 font-mono text-xs">
-            <div class="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex justify-between items-center">
-              <div class="flex items-center space-x-2">
-                <span class="text-emerald-400 font-bold">PASS</span>
-                <span class="text-[var(--foreground)]">Concurrent token exchange deadlock stress (50 parallel requests)</span>
-              </div>
-              <span class="text-[var(--muted-foreground)]">84ms</span>
-            </div>
-
-            <div class="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex justify-between items-center">
-              <div class="flex items-center space-x-2">
-                <span class="text-emerald-400 font-bold">PASS</span>
-                <span class="text-[var(--foreground)]">WebAuthn challenge replay protection and timestamp expiry</span>
-              </div>
-              <span class="text-[var(--muted-foreground)]">42ms</span>
-            </div>
-
-            <div class="p-3 rounded-xl border border-zinc-700 bg-[var(--card)] flex justify-between items-center">
-              <div class="flex items-center space-x-2">
-                <span class="text-zinc-400 font-bold">PATCHED</span>
-                <span class="text-zinc-300">Null userHandle boundary exception injection</span>
-              </div>
-              <span class="text-emerald-400 font-bold">Fixed in Round 2</span>
-            </div>
-          </div>
-        </div>
-
+    <!-- =======================================================================
+         2. REAL METRICS STRIP
+         ======================================================================= -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <span class="text-[11px] font-mono text-[var(--muted)] block">Active Swarms</span>
+        <div class="text-xl font-bold mt-1 text-[var(--foreground)]" id="metric-swarms">0</div>
       </div>
 
-      <!-- =====================================================================
-           BOTTOM DOCK: LIVE AGENT ACTIVITY TERMINAL STREAM
-           ===================================================================== -->
-      <div class="h-44 border-t border-[var(--border)] bg-[var(--sidebar)] flex flex-col shrink-0">
-        
-        <!-- Terminal Header -->
-        <div class="h-8 border-b border-[var(--border)] bg-[var(--card)] px-4 flex items-center justify-between text-xs font-mono select-none">
-          <div class="flex items-center space-x-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 status-ring"></span>
-            <span class="font-semibold text-[var(--foreground)]">HiveMesh Live Terminal Stream</span>
-            <span class="text-[var(--muted-foreground)]">| stdio & worktree bus</span>
-          </div>
-          <div class="flex items-center space-x-3 text-[11px] text-[var(--muted-foreground)]">
-            <button onclick="clearConsole()" class="hover:text-[var(--foreground)] transition">Clear</button>
-            <span>Autoscroll ON</span>
-          </div>
-        </div>
-
-        <!-- Terminal Log Rows -->
-        <div class="flex-1 p-3 overflow-y-auto font-mono text-[11px] space-y-1.5 custom-scroll text-zinc-300" id="terminal-stream">
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:01</span>
-            <span class="text-indigo-400 font-bold">[ORCHESTRATOR]</span>
-            <span>Calculated critical path for prompt: "Add WebAuthn passkeys". Spawning 4 elastic agents.</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:02</span>
-            <span class="text-blue-400 font-bold">[API-BUILDER]</span>
-            <span>Allocated isolated Git worktree at <code class="text-zinc-400">d:\twenty-crm-backend</code> (branch: hivemesh/swarm_01/backend)</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:04</span>
-            <span class="text-purple-400 font-bold">[UI-SURFACE]</span>
-            <span>Allocated isolated Git worktree at <code class="text-zinc-400">d:\twenty-crm-frontend</code> (branch: hivemesh/swarm_01/frontend)</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:06</span>
-            <span class="text-emerald-400 font-bold">[BLACKBOARD]</span>
-            <span>Insight posted: <code class="text-emerald-300">[architecture:auth]</code> indexed via SQLite FTS5 (BM25 ranking ready)</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:08</span>
-            <span class="text-indigo-400 font-bold">[P2P-MESH]</span>
-            <span>Interface contract proposed between Backend & Frontend: <code class="text-indigo-300">interface PasskeyCredential</code></span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:10</span>
-            <span class="text-emerald-400 font-bold">[AST-RADAR]</span>
-            <span>TypeScript Compiler API scan: 0 breaking changes detected across branches. Green light.</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-zinc-500">12:35:12</span>
-            <span class="text-rose-400 font-bold">[RED-TEAM]</span>
-            <span>Simulating adversarial attacks: challenge replay, concurrent session floods... 19/19 PASSED.</span>
-          </div>
-        </div>
-
+      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <span class="text-[11px] font-mono text-[var(--muted)] block">Isolated Worktrees</span>
+        <div class="text-xl font-bold mt-1 text-emerald-400" id="metric-worktrees">0</div>
       </div>
 
+      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <span class="text-[11px] font-mono text-[var(--muted)] block">Blackboard Insights</span>
+        <div class="text-xl font-bold mt-1 text-indigo-400" id="metric-insights">0</div>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <span class="text-[11px] font-mono text-[var(--muted)] block">Git Commit (HEAD)</span>
+        <div class="text-xl font-bold mt-1 text-zinc-300 font-mono" id="metric-commits">-</div>
+      </div>
     </div>
 
-  </main>
+    <!-- =======================================================================
+         3. SECTION: ACTIVE SWARMS & WORKTREES (100% REAL)
+         ======================================================================= -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-mono uppercase tracking-wider text-[var(--muted)] font-semibold">Active Parallel Swarms</h2>
+        <button onclick="toggleNewSwarmModal()" class="text-xs font-mono text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1">
+          + Launch New Swarm
+        </button>
+      </div>
+
+      <!-- Quick Launch Drawer / Panel -->
+      <div id="new-swarm-box" class="hidden p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
+        <div class="text-xs font-semibold text-[var(--foreground)]">Launch a New Parallel Swarm</div>
+        <div class="space-y-2 text-xs font-mono">
+          <div>
+            <label class="text-[11px] text-[var(--muted)] block mb-1">Task Description</label>
+            <input type="text" id="swarm-task-input" placeholder="e.g. Implement OAuth token refresh with passkeys"
+              class="w-full px-3 py-2 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="text-[11px] text-[var(--muted)] block mb-1">Roles (comma-separated)</label>
+            <input type="text" id="swarm-roles-input" value="backend, frontend, security"
+              class="w-full px-3 py-2 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-1">
+          <button onclick="toggleNewSwarmModal()" class="text-xs font-mono px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--card-inner)] text-[var(--muted)]">Cancel</button>
+          <button onclick="launchRealSwarm()" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Create Swarm & Worktrees</button>
+        </div>
+      </div>
+
+      <!-- Swarms Container (populated from /api/status) -->
+      <div id="swarms-container" class="space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         4. SECTION: BLACKBOARD KNOWLEDGE (FTS5) (100% REAL)
+         ======================================================================= -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-mono uppercase tracking-wider text-[var(--muted)] font-semibold">Shared Blackboard Memory (SQLite FTS5)</h2>
+        <span class="text-[11px] font-mono text-zinc-500">Zero-Token Discovery Bus</span>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
+        <div class="flex items-center gap-2">
+          <input type="text" id="bb-filter" oninput="filterBlackboard()" placeholder="Filter memory (FTS5 BM25)..."
+            class="flex-1 text-xs px-3 py-1.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted)] font-mono focus:outline-none focus:border-indigo-500">
+          
+          <button onclick="toggleAddInsight()" class="text-xs font-mono px-2.5 py-1.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] hover:bg-[var(--border)] text-zinc-300">
+            + Post Insight
+          </button>
+        </div>
+
+        <!-- Add Insight Form -->
+        <div id="add-insight-box" class="hidden p-3 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] space-y-2 text-xs font-mono">
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="insight-topic" placeholder="Topic (e.g. auth:jwt)" class="px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+            <input type="text" id="insight-key" placeholder="Key (e.g. session_ttl)" class="px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+          </div>
+          <input type="text" id="insight-value" placeholder="Insight value or architecture discovery..." class="w-full px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+          <div class="flex justify-end gap-2 pt-1">
+            <button onclick="toggleAddInsight()" class="text-[11px] px-2 py-1 rounded text-zinc-400">Cancel</button>
+            <button onclick="postRealInsight()" class="text-[11px] px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Post to SQLite</button>
+          </div>
+        </div>
+
+        <!-- Blackboard Items List -->
+        <div id="blackboard-list" class="space-y-2 text-xs font-mono">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         5. SECTION: REAL EVENT LOG STREAM
+         ======================================================================= -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-xs font-mono text-[var(--muted)]">
+        <span class="uppercase tracking-wider font-semibold">Live System Events</span>
+        <button onclick="clearLogs()" class="hover:text-[var(--foreground)] transition">Clear</button>
+      </div>
+
+      <div class="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] font-mono text-[11px] h-36 overflow-y-auto space-y-1 text-zinc-300" id="live-log-box">
+        <!-- Real events stream here -->
+      </div>
+    </div>
+
+  </div>
 
   <!-- =========================================================================
-       JAVASCRIPT INTERACTIONS & SSE STREAMING
+       JAVASCRIPT: 100% REAL DATA LOGIC & SSE
        ========================================================================= -->
   <script>
     // Theme Management
@@ -593,152 +224,268 @@
       }
       localStorage.setItem('hivemesh-theme', theme);
     }
-
     const savedTheme = localStorage.getItem('hivemesh-theme');
     if (savedTheme) changeTheme(savedTheme);
 
-    // Agent Details Registry
-    const agentRegistry = {
-      master: {
-        name: "Master Orchestrator",
-        role: "Swarm Lead",
-        branch: "main",
-        task: "Decomposing prompts, coordinating P2P contracts, tracking AST signatures, and synthesizing pre-merge approvals",
-        path: "d:\\twenty-crm",
-        commits: "4 Clean"
-      },
-      backend: {
-        name: "Backend Builder",
-        role: "API Worker",
-        branch: "hivemesh/swarm_01/backend",
-        task: "Implementing WebAuthn assertion handlers, challenge generation, & session refresh tokens",
-        path: "d:\\twenty-crm-backend",
-        commits: "3 Clean"
-      },
-      frontend: {
-        name: "Frontend Builder",
-        role: "UI Surface Worker",
-        branch: "hivemesh/swarm_01/frontend",
-        task: "Building Apollo Client Passkey UI modal & WebAuthn browser API integration",
-        path: "d:\\twenty-crm-frontend",
-        commits: "2 Clean"
-      },
-      database: {
-        name: "Database Builder",
-        role: "ORM Worker",
-        branch: "hivemesh/swarm_01/database",
-        task: "Running TypeORM migrations for UserCredential & PasskeyTenant entities",
-        path: "d:\\twenty-crm-database",
-        commits: "1 Clean"
-      },
-      security: {
-        name: "Adversary Red Team",
-        role: "Security Adversary",
-        branch: "hivemesh/swarm_01/security",
-        task: "Running automated fuzzing, challenge replay, and token deadlock stress tests before merge",
-        path: "d:\\twenty-crm-security",
-        commits: "2 Attack Suites"
-      }
-    };
+    let currentSwarms = [];
+    let currentBlackboard = [];
 
-    function selectAgent(id) {
-      const a = agentRegistry[id];
-      if (!a) return;
-      document.getElementById('insp-name').innerText = a.name;
-      document.getElementById('insp-role').innerText = a.role;
-      document.getElementById('insp-branch').innerText = a.branch;
-      document.getElementById('insp-task').innerText = a.task;
-      document.getElementById('insp-path').innerText = a.path;
-      document.getElementById('insp-commits').innerText = a.commits;
-
-      appendLog(`[INSPECTOR]`, `Inspecting agent node: ${a.name} (${a.branch})`, "#818cf8");
-    }
-
-    function setTab(name) {
-      ['topology', 'ast', 'blackboard', 'selfplay'].forEach(t => {
-        const v = document.getElementById('view-' + t);
-        const nav = document.getElementById('nav-' + t);
-        if (t === name) {
-          v.classList.remove('hidden');
-          nav.className = "w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] transition";
-        } else {
-          v.classList.add('hidden');
-          nav.className = "w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg hover:bg-[var(--card)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition";
-        }
-      });
-      const titles = {
-        topology: "Swarm Topology Mesh",
-        ast: "AST Semantic Safety Radar",
-        blackboard: "SQLite FTS5 Shared Memory",
-        selfplay: "Adversarial Self-Play Lab"
-      };
-      document.getElementById('header-title').innerText = titles[name] || "Swarm Mission Control";
-    }
-
-    function searchBB() {
-      const q = document.getElementById('bb-search').value.toLowerCase();
-      document.querySelectorAll('.bb-card').forEach(el => {
-        const k = el.getAttribute('data-key');
-        el.style.display = (!q || k.includes(q)) ? 'flex' : 'none';
-      });
-    }
-
-    function appendLog(tag, message, color = "#9ca3af") {
-      const stream = document.getElementById('terminal-stream');
+    function addLog(source, message, color = "#9ca3af") {
+      const box = document.getElementById('live-log-box');
       const time = new Date().toLocaleTimeString('en-US', { hour12: false });
       const row = document.createElement('div');
-      row.className = "flex items-center space-x-2";
+      row.className = "flex items-start space-x-2";
       row.innerHTML = `
-        <span class="text-zinc-500">${time}</span>
-        <span style="color: ${color}; font-weight: bold;">${tag}</span>
-        <span>${message}</span>
+        <span class="text-zinc-500 shrink-0">${time}</span>
+        <span class="shrink-0 font-semibold" style="color: ${color};">[${source}]</span>
+        <span class="break-all">${escapeHtml(message)}</span>
       `;
-      stream.appendChild(row);
-      stream.scrollTop = stream.scrollHeight;
+      box.appendChild(row);
+      box.scrollTop = box.scrollHeight;
     }
 
-    function clearConsole() {
-      document.getElementById('terminal-stream').innerHTML = '';
-      appendLog("[SYSTEM]", "Console logs cleared", "#6ee7b7");
+    function clearLogs() {
+      document.getElementById('live-log-box').innerHTML = '';
+      addLog("SYSTEM", "Log buffer cleared", "#10b981");
     }
 
-    function triggerRedTeamAttack() {
-      appendLog("[RED-TEAM]", "Executing live fuzzing attack on /api/auth/verifyAssertion...", "#f43f5e");
-      const redNode = document.getElementById('adversary-node');
-      if (redNode) {
-        redNode.classList.add('status-ring');
-        setTimeout(() => redNode.classList.remove('status-ring'), 2000);
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Fetch 100% Real Status
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        // 1. Project Info
+        document.getElementById('proj-name').innerText = data.project.name;
+        document.getElementById('proj-branch').innerText = data.project.branch;
+        document.getElementById('metric-commits').innerText = data.project.commit ? '#' + data.project.commit : '-';
+
+        // 2. Metrics
+        currentSwarms = data.swarms || [];
+        document.getElementById('metric-swarms').innerText = currentSwarms.length;
+        document.getElementById('metric-worktrees').innerText = data.totalWorktrees || 0;
+
+        currentBlackboard = (data.blackboard && data.blackboard.entries) || [];
+        document.getElementById('metric-insights').innerText = currentBlackboard.length;
+
+        // 3. Render Swarms
+        renderSwarms(currentSwarms);
+
+        // 4. Render Blackboard
+        renderBlackboard(currentBlackboard);
+
+      } catch (err) {
+        addLog("ERROR", "Failed to fetch status: " + err.message, "#f43f5e");
       }
-      setTimeout(() => {
-        appendLog("[RED-TEAM]", "Attack Round Complete: 19/19 vectors defended successfully (0 regressions).", "#34d399");
-      }, 900);
     }
 
-    function triggerASTAudit() {
-      appendLog("[AST-RADAR]", "Invoking TypeScript Compiler API AST signature diffing...", "#10b981");
-      setTimeout(() => {
-        appendLog("[AST-RADAR]", "Audit PASSED: 0 breaking signature changes detected across 4 worktrees.", "#34d399");
-      }, 700);
+    // Render Swarms
+    function renderSwarms(swarms) {
+      const container = document.getElementById('swarms-container');
+      if (swarms.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 rounded-xl bg-[var(--card)] border border-[var(--border)] text-center space-y-2">
+            <div class="text-2xl">🐝</div>
+            <div class="text-xs font-semibold text-[var(--foreground)]">No active swarms</div>
+            <p class="text-xs text-[var(--muted)] font-mono max-w-sm mx-auto">
+              No isolated worktrees are currently active. Run <code class="text-indigo-400">npx hivemesh run "&lt;task&gt;"</code> or click "+ Launch New Swarm" above.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = swarms.map(s => {
+        const date = new Date(s.createdAt).toLocaleTimeString();
+        return `
+          <div class="p-4 rounded-xl bg-[var(--card)] border border-[var(--border)] space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[var(--border)] text-xs font-mono">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="font-bold text-[var(--foreground)]">${escapeHtml(s.id)}</span>
+                <span class="text-zinc-500">created at ${date}</span>
+              </div>
+              <button onclick="cleanRealSwarm('${escapeHtml(s.id)}')" class="text-rose-400 hover:text-rose-300 font-mono transition text-[11px] px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
+                Destroy Worktrees
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              ${s.worktrees.map(wt => `
+                <div class="p-2.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-xs font-mono space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-indigo-400 uppercase text-[11px]">${escapeHtml(wt.role)}</span>
+                    <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">${escapeHtml(wt.status)}</span>
+                  </div>
+                  <div class="text-[11px] text-zinc-300 truncate" title="${escapeHtml(wt.branch)}">🌿 ${escapeHtml(wt.branch)}</div>
+                  <div class="text-[10px] text-zinc-500 truncate" title="${escapeHtml(wt.path)}">📁 ${escapeHtml(wt.path)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    function previewMerge() {
-      appendLog("[MERGE-BOT]", "Synthesizing 3-way worktree merge: 0 Git conflicts expected. Ready for PR.", "#a855f7");
+    // Render Blackboard
+    function renderBlackboard(entries) {
+      const list = document.getElementById('blackboard-list');
+      if (entries.length === 0) {
+        list.innerHTML = `
+          <div class="p-4 text-center text-xs text-[var(--muted)] font-mono">
+            No knowledge entries posted yet. Parallel agents will automatically index architectural patterns here.
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = entries.map(e => `
+        <div class="p-2.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] flex justify-between items-start">
+          <div class="space-y-0.5">
+            <div class="flex items-center space-x-2">
+              <span class="text-indigo-400 font-bold text-[11px]">[${escapeHtml(e.topic)}]</span>
+              <span class="text-zinc-400 text-[11px] font-semibold">${escapeHtml(e.key)}</span>
+            </div>
+            <p class="text-zinc-200 text-xs">${escapeHtml(e.value)}</p>
+          </div>
+          <span class="text-[10px] text-zinc-500 shrink-0 ml-2 font-mono">${escapeHtml(e.agentId)}</span>
+        </div>
+      `).join('');
     }
 
-    function logWorktreeDiff() {
-      appendLog("[GIT-WORKTREE]", "Diff summary: +142 lines, -18 lines across 3 files. All exports validated.", "#93c5fd");
+    function filterBlackboard() {
+      const q = document.getElementById('bb-filter').value.toLowerCase();
+      const filtered = currentBlackboard.filter(e => 
+        e.topic.toLowerCase().includes(q) || 
+        e.key.toLowerCase().includes(q) || 
+        e.value.toLowerCase().includes(q)
+      );
+      renderBlackboard(filtered);
     }
 
-    // Connect to Live SSE
-    if (window.location.protocol.startsWith('http')) {
-      const evt = new EventSource('/events');
-      evt.onmessage = (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          appendLog("[SSE-LIVE]", "Received real-time event from HiveMesh server", "#38bdf8");
-        } catch {}
-      };
+    function toggleNewSwarmModal() {
+      const el = document.getElementById('new-swarm-box');
+      el.classList.toggle('hidden');
     }
+
+    function toggleAddInsight() {
+      const el = document.getElementById('add-insight-box');
+      el.classList.toggle('hidden');
+    }
+
+    // Real API Calls
+    async function launchRealSwarm() {
+      const task = document.getElementById('swarm-task-input').value.trim();
+      const rolesInput = document.getElementById('swarm-roles-input').value.trim();
+      const roles = rolesInput ? rolesInput.split(',').map(r => r.trim()).filter(Boolean) : [];
+
+      if (!task) {
+        alert("Please enter a task description");
+        return;
+      }
+
+      addLog("SWARM", `Creating parallel swarm with roles: ${roles.join(', ')}...`, "#6366f1");
+      toggleNewSwarmModal();
+
+      try {
+        const res = await fetch('/api/swarm/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, roles })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        addLog("SWARM", `Swarm created successfully: ${data.swarm.id} (${data.swarm.worktrees.length} isolated worktrees)`, "#10b981");
+        fetchStatus();
+      } catch (err) {
+        addLog("ERROR", "Failed to launch swarm: " + err.message, "#f43f5e");
+      }
+    }
+
+    async function cleanRealSwarm(swarmId) {
+      if (!confirm(`Are you sure you want to clean worktrees for ${swarmId}?`)) return;
+      addLog("SWARM", `Destroying worktrees for swarm ${swarmId}...`, "#f43f5e");
+
+      try {
+        const res = await fetch('/api/swarm/clean', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ swarmId })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        addLog("SWARM", `Worktrees destroyed for ${swarmId}`, "#10b981");
+        fetchStatus();
+      } catch (err) {
+        addLog("ERROR", "Failed to clean swarm: " + err.message, "#f43f5e");
+      }
+    }
+
+    async function postRealInsight() {
+      const topic = document.getElementById('insight-topic').value.trim();
+      const key = document.getElementById('insight-key').value.trim();
+      const value = document.getElementById('insight-value').value.trim();
+
+      if (!topic || !key || !value) {
+        alert("Please fill all insight fields");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/blackboard/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, key, value, agentId: "operator" })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        addLog("BLACKBOARD", `Indexed real insight [${topic}]: ${key}`, "#10b981");
+        document.getElementById('insight-topic').value = '';
+        document.getElementById('insight-key').value = '';
+        document.getElementById('insight-value').value = '';
+        toggleAddInsight();
+        fetchStatus();
+      } catch (err) {
+        addLog("ERROR", "Failed to post insight: " + err.message, "#f43f5e");
+      }
+    }
+
+    // Connect to SSE
+    function initSSE() {
+      if (window.location.protocol.startsWith('http')) {
+        const evt = new EventSource('/events');
+        evt.onopen = () => {
+          document.getElementById('live-status').innerText = 'Connected';
+          document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-emerald-400 status-dot';
+          addLog("ENGINE", "Connected to HiveMesh SSE Event Bus", "#10b981");
+        };
+        evt.onerror = () => {
+          document.getElementById('live-status').innerText = 'Offline';
+          document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-rose-500';
+        };
+        evt.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.message) addLog("ENGINE", data.message, "#38bdf8");
+          } catch {}
+        };
+        evt.addEventListener('swarm_created', () => { fetchStatus(); });
+        evt.addEventListener('swarm_cleaned', () => { fetchStatus(); });
+        evt.addEventListener('blackboard_posted', () => { fetchStatus(); });
+      }
+    }
+
+    // Startup
+    fetchStatus();
+    initSSE();
   </script>
 </body>
 </html>

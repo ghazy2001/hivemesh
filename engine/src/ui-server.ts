@@ -1,15 +1,17 @@
 /**
  * HiveMesh Live UI Server
  * Lightweight zero-dependency HTTP server with Server-Sent Events (SSE)
- * for real-time mission control, swarm monitoring, and visual topology.
+ * providing 100% real data from Git, Worktrees, AST Watcher, and SQLite Blackboard.
  */
 
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import { fileURLToPath } from "url";
-import { getSwarmStatus, destroySwarm } from "./worktree-manager.js";
+import { createSwarm, getSwarmStatus, destroySwarm } from "./worktree-manager.js";
+import { Blackboard } from "./blackboard.js";
+import { checkASTChanges } from "./ast-watcher.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,19 +35,54 @@ export function broadcastEvent(event: string, data: any): void {
   }
 }
 
+function parseBody(req: http.IncomingMessage): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => {
+      try {
+        resolve(data ? JSON.parse(data) : {});
+      } catch (e) {
+        resolve({});
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function getGitBranch(cwd: string): string {
+  try {
+    return execSync("git rev-parse --abbrev-ref HEAD", { cwd, encoding: "utf-8", stdio: "pipe" }).trim();
+  } catch {
+    return "main";
+  }
+}
+
+function getGitCommitHash(cwd: string): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { cwd, encoding: "utf-8", stdio: "pipe" }).trim();
+  } catch {
+    return "HEAD";
+  }
+}
+
 export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ port: number; server: http.Server }> {
   return new Promise((resolve, reject) => {
-    // Locate assets/dashboard.html
     const projectRoot = path.resolve(__dirname, "../../");
     let dashboardPath = path.join(projectRoot, "assets", "dashboard.html");
-
     if (!fs.existsSync(dashboardPath)) {
-      // Fallback relative to engine
       dashboardPath = path.join(__dirname, "../assets/dashboard.html");
     }
 
-    const server = http.createServer((req, res) => {
-      // CORS headers
+    const targetDir = process.cwd();
+    const hivemeshDir = path.join(targetDir, ".hivemesh");
+    if (!fs.existsSync(hivemeshDir)) {
+      try { fs.mkdirSync(hivemeshDir, { recursive: true }); } catch {}
+    }
+    const dbPath = path.join(hivemeshDir, "blackboard.db");
+    const blackboard = new Blackboard(dbPath);
+
+    const server = http.createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -66,17 +103,49 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
           res.end(html);
         } else {
           res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end("dashboard.html not found at " + dashboardPath);
+          res.end("dashboard.html not found");
         }
         return;
       }
 
-      // 2. Swarm Status API
-      if (url === "/api/swarms") {
+      // 2. Real System & Swarm Status API
+      if (url === "/api/status") {
         try {
-          const swarms = getSwarmStatus(process.cwd());
+          const swarms = getSwarmStatus(targetDir);
+          const currentBranch = getGitBranch(targetDir);
+          const commitHash = getGitCommitHash(targetDir);
+          const bbEntries = blackboard.query("");
+          const bbStats = blackboard.getStats();
+
+          // Calculate total isolated worktrees
+          let totalWorktrees = 0;
+          for (const s of swarms) {
+            totalWorktrees += s.worktrees.length;
+          }
+
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true, swarms }));
+          res.end(
+            JSON.stringify({
+              success: true,
+              project: {
+                name: path.basename(targetDir),
+                path: targetDir,
+                branch: currentBranch,
+                commit: commitHash,
+              },
+              swarms,
+              totalWorktrees,
+              blackboard: {
+                entries: bbEntries,
+                stats: bbStats,
+              },
+              system: {
+                nodeVersion: process.version,
+                platform: process.platform,
+                uptime: process.uptime(),
+              },
+            })
+          );
         } catch (err) {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: String(err) }));
@@ -84,7 +153,102 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
         return;
       }
 
-      // 3. Server-Sent Events (SSE) Live Feed
+      // 3. Create Real Swarm API
+      if (url === "/api/swarm/create" && req.method === "POST") {
+        try {
+          const body = await parseBody(req);
+          const roles = body.roles && Array.isArray(body.roles) && body.roles.length > 0
+            ? body.roles
+            : ["domain-logic", "ui-surface", "security-adversary"];
+          const baseBranch = body.baseBranch || getGitBranch(targetDir);
+
+          const swarm = createSwarm(targetDir, roles, baseBranch);
+          broadcastEvent("swarm_created", { swarm });
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, swarm }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+        return;
+      }
+
+      // 4. Destroy Real Swarm API
+      if (url === "/api/swarm/clean" && req.method === "POST") {
+        try {
+          const body = await parseBody(req);
+          const swarmId = body.swarmId;
+          if (!swarmId) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Missing swarmId" }));
+            return;
+          }
+
+          const result = destroySwarm(swarmId);
+          broadcastEvent("swarm_cleaned", { swarmId, result });
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, result }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+        return;
+      }
+
+      // 5. Post to Real Blackboard API
+      if (url === "/api/blackboard/post" && req.method === "POST") {
+        try {
+          const body = await parseBody(req);
+          const { topic, key, value, agentId = "human-operator" } = body;
+          if (!topic || !key || !value) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Missing topic, key, or value" }));
+            return;
+          }
+
+          const entry = blackboard.post(topic, key, value, agentId);
+          broadcastEvent("blackboard_posted", { entry });
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, entry }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+        return;
+      }
+
+      // 6. Run Real AST Audit API
+      if (url === "/api/ast/check" && req.method === "POST") {
+        try {
+          const swarms = getSwarmStatus(targetDir);
+          const reports = [];
+          for (const s of swarms) {
+            for (const wt of s.worktrees) {
+              if (fs.existsSync(wt.path)) {
+                try {
+                  const rep = checkASTChanges(targetDir, wt.path, wt.role);
+                  reports.push(rep);
+                } catch {
+                  // non-ts project or no changes
+                }
+              }
+            }
+          }
+
+          broadcastEvent("ast_checked", { reports });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, reports }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+        return;
+      }
+
+      // 7. Server-Sent Events (SSE) Live Feed
       if (url === "/events" || url === "/api/events") {
         res.writeHead(200, {
           "Content-Type": "text/event-stream",
@@ -95,28 +259,18 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
         const id = ++clientIdCounter;
         clients.push({ id, res });
 
-        // Initial sync
-        const swarms = getSwarmStatus(process.cwd());
-        res.write(`event: connected\ndata: ${JSON.stringify({ message: "Connected to HiveMesh Live UI", swarms })}\n\n`);
+        const swarms = getSwarmStatus(targetDir);
+        res.write(
+          `event: connected\ndata: ${JSON.stringify({
+            message: "Connected to HiveMesh Live Engine",
+            project: path.basename(targetDir),
+            swarms,
+          })}\n\n`
+        );
 
         req.on("close", () => {
           clients = clients.filter((c) => c.id !== id);
         });
-        return;
-      }
-
-      // 4. Clean Swarm API
-      if (url.startsWith("/api/clean/")) {
-        const swarmId = url.replace("/api/clean/", "");
-        try {
-          const result = destroySwarm(swarmId);
-          broadcastEvent("swarm_cleaned", { swarmId, result });
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true, result }));
-        } catch (e) {
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: String(e) }));
-        }
         return;
       }
 
@@ -126,7 +280,6 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
 
     server.on("error", (err: any) => {
       if (err.code === "EADDRINUSE") {
-        // Try next port
         console.log(`Port ${requestedPort} in use, trying ${requestedPort + 1}...`);
         startUiServer(requestedPort + 1, autoOpen).then(resolve).catch(reject);
       } else {
@@ -141,7 +294,12 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
       console.log(`  Local URL: \x1b[32m${url}\x1b[0m\n`);
 
       if (autoOpen) {
-        const cmd = process.platform === "win32" ? `start ${url}` : process.platform === "darwin" ? `open ${url}` : `xdg-open ${url}`;
+        const cmd =
+          process.platform === "win32"
+            ? `start ${url}`
+            : process.platform === "darwin"
+            ? `open ${url}`
+            : `xdg-open ${url}`;
         exec(cmd, () => {});
       }
 

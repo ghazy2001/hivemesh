@@ -22,7 +22,7 @@ export interface BlackboardStats {
 export declare class Blackboard {
     private db;
     private counter;
-    constructor();
+    constructor(dbPath?: string);
     private initSchema;
     post(topic: string, key: string, value: string, agentId: string, ttl?: number): Insight;
     query(topic?: string, key?: string, search?: string): Insight[];

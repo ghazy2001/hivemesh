@@ -7,8 +7,8 @@ import { DatabaseSync } from "node:sqlite";
 export class Blackboard {
     db;
     counter = 0;
-    constructor() {
-        this.db = new DatabaseSync(":memory:");
+    constructor(dbPath = ":memory:") {
+        this.db = new DatabaseSync(dbPath);
         this.initSchema();
     }
     initSchema() {

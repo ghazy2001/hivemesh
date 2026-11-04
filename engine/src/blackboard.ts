@@ -28,8 +28,8 @@ export class Blackboard {
   private db: DatabaseSync;
   private counter = 0;
 
-  constructor() {
-    this.db = new DatabaseSync(":memory:");
+  constructor(dbPath: string = ":memory:") {
+    this.db = new DatabaseSync(dbPath);
     this.initSchema();
   }
 
