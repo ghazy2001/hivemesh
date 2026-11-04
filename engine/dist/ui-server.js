@@ -78,6 +78,7 @@ export function getAntigravityBrainState(selectedId) {
                                 mission,
                                 action: "Operating in isolated workspace",
                                 status: "ACTIVE",
+                                isRunning: false,
                                 files: [],
                                 steps: []
                             });
@@ -154,9 +155,13 @@ export function getAntigravityBrainState(selectedId) {
                         sa.files = files;
                         sa.steps = subSteps;
                         if (subLines.length > 0) {
+                            const stat = fs.statSync(subTPath);
+                            const isRecent = (Date.now() - stat.mtimeMs < 180000);
                             const lastStep = JSON.parse(subLines[subLines.length - 1]);
-                            sa.status = lastStep.status === "DONE" ? "DONE" : "RUNNING";
-                            sa.action = lastStep.status === "DONE"
+                            const isDone = (lastStep.status === "DONE") || (!isRecent);
+                            sa.status = isDone ? "DONE" : "RUNNING";
+                            sa.isRunning = !isDone;
+                            sa.action = isDone
                                 ? `Completed • Generated ${files.length} verified file(s)`
                                 : "Active in isolated subagent workspace";
                         }

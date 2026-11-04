@@ -171,8 +171,28 @@
               </span>
             </div>
 
+            <!-- Stage Filter Tabs: Running Now (Default) | Completed | Git Worktrees -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5 font-mono text-xs">
+              <div class="flex items-center gap-1.5">
+                <button onclick="setStageTab('running')" id="tab-running-btn" class="px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring" id="running-dot"></span>
+                  <span>الايجنتس الشغالة (Running)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-black/50" id="count-running">0</span>
+                </button>
+                <button onclick="setStageTab('completed')" id="tab-completed-btn" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800 transition cursor-pointer flex items-center gap-1.5">
+                  <span>المكتملة (Completed)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-zinc-800 text-zinc-300" id="count-completed">0</span>
+                </button>
+                <button onclick="setStageTab('worktrees')" id="tab-worktrees-btn" class="px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800 transition cursor-pointer flex items-center gap-1.5">
+                  <span>Git Worktrees</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] bg-zinc-800 text-zinc-300" id="count-worktrees">0</span>
+                </button>
+              </div>
+              <span class="text-[10px] text-zinc-500" id="tab-hint">الايجنتس النشطة حالياً فقط</span>
+            </div>
+
             <!-- Dynamic Small Cards Grid (Updated in-place with zero flicker) -->
-            <div id="subagents-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <div id="subagents-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full min-h-[340px]">
               <!-- Rendered via JS: subagents, background tasks, or primary workspace card -->
             </div>
           </div>
@@ -239,6 +259,7 @@
     let lastRenderedPrompt = '';
     let currentBrainData = null;
     let currentSwarmsData = null;
+    let currentStageTab = 'running';
 
     function escapeHtml(str) {
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -367,70 +388,114 @@
       const subagents = brain.subagents || [];
       const swarmWorktrees = (swarms && swarms.length > 0) ? swarms[0].worktrees : [];
 
-      const totalWorkers = subagents.length + swarmWorktrees.length;
+      const runningSubagents = subagents.filter(sa => sa.isRunning);
+      const completedSubagents = subagents.filter(sa => !sa.isRunning);
 
+      // Update Tab Counter Badges
+      const countRunEl = document.getElementById('count-running');
+      if (countRunEl) countRunEl.innerText = runningSubagents.length;
+      const countCompEl = document.getElementById('count-completed');
+      if (countCompEl) countCompEl.innerText = completedSubagents.length;
+      const countWtEl = document.getElementById('count-worktrees');
+      if (countWtEl) countWtEl.innerText = swarmWorktrees.length;
+
+      // Update Top Status Badge
       if (badge) {
-        badge.innerText = `${totalWorkers || 1} Active Units`;
-        badge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+        if (currentStageTab === 'running') {
+          badge.innerText = `${runningSubagents.length} Running Now`;
+          badge.className = runningSubagents.length > 0
+            ? "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+            : "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700";
+        } else if (currentStageTab === 'completed') {
+          badge.innerText = `${completedSubagents.length} Completed`;
+          badge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30";
+        } else {
+          badge.innerText = `${swarmWorktrees.length} Git Worktrees`;
+          badge.className = "text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+        }
       }
 
-      // Dynamic cards data
+      // 1. When on 'running' tab and no subagents are currently executing:
+      if (currentStageTab === 'running' && runningSubagents.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-1 md:col-span-2 flex flex-col items-center justify-center p-10 text-center rounded-2xl bg-black/30 border border-zinc-800/80 space-y-3.5 animate-enter">
+            <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl text-zinc-400 shadow-inner">
+              ⚡
+            </div>
+            <div class="space-y-1">
+              <div class="font-mono text-sm font-bold text-white tracking-wide">لا يوجد Agents شغالة في الخلفية حالياً</div>
+              <div class="font-mono text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+                الاوركستراتور جاهز في الشات. لما ترسل أمر يتطلب تشغيل Subagents بالتوازي، هتظهر كروتها الحية هنا فوراً وهي بتنفذ العمليات.
+              </div>
+            </div>
+            <div class="pt-2 flex flex-wrap items-center justify-center gap-2">
+              <button onclick="setStageTab('completed')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
+                <span>عرض الايجنتس المكتملة (${completedSubagents.length})</span> ↗
+              </button>
+              <button onclick="setStageTab('worktrees')" class="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono transition flex items-center gap-1.5 cursor-pointer">
+                <span>عرض الـ Git Worktrees (${swarmWorktrees.length})</span> ↗
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 2. Build cardsData depending on the active tab
       const cardsData = [];
 
-      // 1. Add Subagents
-      subagents.forEach((sa, idx) => {
-        const isDone = (sa.status === 'DONE');
-        const filesList = sa.files || [];
-        cardsData.push({
-          kind: 'subagent',
-          id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
-          title: sa.role,
-          badge: isDone ? 'COMPLETED ✓' : (sa.type ? sa.type.toUpperCase() : 'RUNNING'),
-          badgeClass: isDone ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-          color: idx === 0 ? "#6366f1" : "#a855f7",
-          icon: "🤖",
-          mission: sa.mission || sa.prompt || "Execute assigned directives",
-          activity: sa.action || (isDone ? `Completed • Generated ${filesList.length} files` : 'Operating in isolated workspace'),
-          files: filesList,
-          isDone,
-          footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • Verified Output ✓`
+      if (currentStageTab === 'running') {
+        runningSubagents.forEach((sa, idx) => {
+          const filesList = sa.files || [];
+          cardsData.push({
+            kind: 'subagent',
+            id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
+            title: sa.role,
+            badge: 'RUNNING',
+            badgeClass: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+            color: '#3b82f6',
+            icon: '🤖',
+            mission: sa.mission || sa.prompt || 'Execute assigned directives',
+            activity: sa.action || 'Operating in isolated workspace',
+            files: filesList,
+            isDone: false,
+            footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • Executing live ✓`
+          });
         });
-      });
-
-      // 2. Add Swarm Git Worktrees if active
-      swarmWorktrees.forEach((wt, idx) => {
-        cardsData.push({
-          kind: 'worktree',
-          id: `worktree-${wt.role}`,
-          title: wt.role.toUpperCase(),
-          badge: "GIT WORKTREE",
-          badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-          color: "#10b981",
-          icon: "🌿",
-          domain: wt.description || "Isolated Domain Workspace",
-          targetPackage: wt.targetPackage || wt.path.split(/[\\/]/).pop(),
-          branch: wt.branch,
-          activity: `Clean Git Worktree • Isolated on ${wt.branch.split('/').pop()}`,
-          footer: `Worktree: ${wt.path.split(/[\\/]/).pop()} • AST Semantic Guard ✓`
+      } else if (currentStageTab === 'completed') {
+        completedSubagents.forEach((sa, idx) => {
+          const filesList = sa.files || [];
+          cardsData.push({
+            kind: 'subagent',
+            id: `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}`,
+            title: sa.role,
+            badge: 'COMPLETED ✓',
+            badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+            color: idx === 0 ? '#6366f1' : '#a855f7',
+            icon: '🤖',
+            mission: sa.mission || sa.prompt || 'Execute assigned directives',
+            activity: sa.action || `Completed • Generated ${filesList.length} files`,
+            files: filesList,
+            isDone: true,
+            footer: `Subagent #${(sa.id || 'Active').slice(0, 8)} • Verified Output ✓`
+          });
         });
-      });
-
-      // 3. Fallback: If no subagents and no worktrees, show Primary Agent
-      if (cardsData.length === 0) {
-        const lastOp = brain.recentOps && brain.recentOps.length > 0
-          ? (brain.recentOps[brain.recentOps.length - 1].label || brain.recentOps[brain.recentOps.length - 1].summary)
-          : "Ready and listening in chat";
-        cardsData.push({
-          kind: 'primary',
-          id: "primary-agent-card",
-          title: "Primary Pair-Programming Agent",
-          badge: "ACTIVE AGENT",
-          badgeClass: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
-          color: "#6366f1",
-          icon: "🤖",
-          mission: "Antigravity Orchestrator paired with Mahmoud. Ready to spawn parallel swarms.",
-          activity: lastOp,
-          footer: "Workspace: D:\\twenty-crm • Conflict-Free"
+      } else if (currentStageTab === 'worktrees') {
+        swarmWorktrees.forEach((wt, idx) => {
+          cardsData.push({
+            kind: 'worktree',
+            id: `worktree-${wt.role}`,
+            title: wt.role.toUpperCase(),
+            badge: 'GIT WORKTREE',
+            badgeClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+            color: '#10b981',
+            icon: '🌿',
+            domain: wt.description || 'Isolated Domain Workspace',
+            targetPackage: wt.targetPackage || wt.path.split(/[\\/]/).pop(),
+            branch: wt.branch,
+            activity: `Clean Git Worktree • Isolated on ${wt.branch.split('/').pop()}`,
+            footer: `Worktree: ${wt.path.split(/[\\/]/).pop()} • AST Semantic Guard ✓`
+          });
         });
       }
 
@@ -538,6 +603,33 @@
           child.remove();
         }
       });
+    }
+
+    function setStageTab(tab) {
+      currentStageTab = tab;
+      ['running', 'completed', 'worktrees'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}-btn`);
+        if (btn) {
+          if (t === tab) {
+            btn.className = "px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+          } else {
+            btn.className = "px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800 transition cursor-pointer flex items-center gap-1.5";
+          }
+        }
+      });
+
+      const hintEl = document.getElementById('tab-hint');
+      if (hintEl) {
+        if (tab === 'running') hintEl.innerText = 'الايجنتس النشطة حالياً فقط';
+        else if (tab === 'completed') hintEl.innerText = 'سجل الايجنتس المكتملة';
+        else hintEl.innerText = 'فروع الـ Git المعزولة على الهارد ديسك';
+      }
+
+      const grid = document.getElementById('subagents-grid');
+      if (grid) grid.innerHTML = ''; // reset cards when switching tab
+      if (currentBrainData) {
+        renderRightStage(currentBrainData, currentSwarmsData || []);
+      }
     }
 
     function openCardInspector(cardId) {

@@ -29,6 +29,7 @@ export interface BrainSubagent {
     mission: string;
     action: string;
     status: string;
+    isRunning: boolean;
     files: string[];
     steps: SubagentExecutionStep[];
 }
