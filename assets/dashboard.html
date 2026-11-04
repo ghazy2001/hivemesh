@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HiveMesh Mission Control</title>
+  <title>HiveMesh Topology Canvas</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     :root {
@@ -28,84 +28,23 @@
     }
   </style>
 </head>
-<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-500/20">
+<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex items-center justify-center font-sans selection:bg-indigo-500/20 p-6">
 
   <!-- =========================================================================
-       1. TOP HEADER (Clean Project Telemetry, Chat Topic & Live Connection)
+       PARALLEL EXECUTION CANVAS / OBSERVATORY BOARD
        ========================================================================= -->
-  <header class="border-b border-[var(--border)] bg-[var(--card)] px-6 py-3.5 flex items-center justify-between shrink-0">
-    <div class="flex items-center space-x-3.5">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/30 flex items-center justify-center text-lg shadow-sm">
-        🐝
-      </div>
-      <div>
-        <div class="flex items-center space-x-2.5">
-          <h1 class="text-sm font-bold tracking-tight text-[var(--foreground)]">HiveMesh</h1>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--card-inner)] border border-[var(--border)] text-zinc-400">v0.3.0</span>
-          <span id="header-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-            <span id="badge-text">Orchestrator Idle</span>
-          </span>
-        </div>
-
-        <!-- Project Name & Conversation Title Row -->
-        <div class="flex flex-wrap items-center gap-2.5 text-xs font-mono mt-1">
-          <!-- 1. اسم المشروع الشغال فيه -->
-          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300">
-            <span class="text-indigo-400 text-[11px] font-semibold">📁 Project:</span>
-            <strong id="proj-name" class="text-white text-[11px] tracking-wide">Loading...</strong>
-            <span class="text-indigo-400/40">•</span>
-            <span id="proj-branch" class="text-indigo-300 text-[11px]">main</span>
-            <span class="text-indigo-400/40">•</span>
-            <span id="proj-commit" class="text-zinc-400 text-[11px]">#HEAD</span>
-          </div>
-
-          <span class="text-zinc-700 hidden sm:inline">|</span>
-
-          <!-- 2. عنوان المحادثة / المهمة -->
-          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/25 text-emerald-300">
-            <span class="text-emerald-400 text-[11px] font-semibold">💬 Chat / Topic:</span>
-            <span id="conversation-title" class="text-emerald-200 text-[11px] font-medium max-w-[340px] truncate" title="Click pencil to rename topic">
-              Building HiveMesh Swarm & Mission Control
-            </span>
-            <button onclick="editConversationTitle()" class="hover:text-white text-[11px] opacity-75 hover:opacity-100 transition cursor-pointer" title="Edit Conversation Title">✏️</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Header: Clean Live SSE Indicator -->
-    <div class="flex items-center space-x-2 text-xs font-mono text-zinc-400 px-3 py-1.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)]">
-      <span class="w-2 h-2 rounded-full bg-emerald-400 status-ring" id="live-dot"></span>
-      <span id="live-text">Live Observatory</span>
-    </div>
-  </header>
-
-  <!-- =========================================================================
-       2. CENTER OBSERVATORY STAGE (Master Orchestrator + Parallel Agents Mesh)
-       ========================================================================= -->
-  <main class="flex-1 p-6 flex flex-col justify-center max-w-6xl w-full mx-auto">
-
-    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 relative shadow-xl min-h-[460px] flex flex-col justify-between">
+  <main class="w-full max-w-6xl mx-auto my-auto">
+    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-8 relative shadow-2xl min-h-[460px] flex flex-col justify-center">
       
-      <!-- Top Meta Info inside Box -->
-      <div class="flex items-center justify-between text-xs font-mono text-[var(--muted)] border-b border-[var(--border)] pb-3">
-        <span class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-indigo-400 status-ring"></span>
-          Parallel Execution Topology
-        </span>
-        <span id="active-swarm-label">Active Swarm: <strong class="text-zinc-400">None</strong></span>
-      </div>
-
-      <!-- Center Body -->
-      <div class="py-8 my-auto" id="topology-area">
+      <!-- Topology Body -->
+      <div id="topology-area" class="w-full my-auto">
         
         <!-- Empty State (When no swarm is currently active) -->
-        <div id="empty-state" class="text-center py-12 space-y-3">
-          <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-2xl mx-auto shadow-inner">
+        <div id="empty-state" class="text-center py-12 space-y-4">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-3xl mx-auto shadow-inner">
             👑
           </div>
-          <div class="text-sm font-semibold text-[var(--foreground)]">Orchestrator Standing By</div>
+          <div class="text-base font-semibold text-[var(--foreground)] tracking-tight">Orchestrator Standing By</div>
           <p class="text-xs text-[var(--muted)] font-mono max-w-md mx-auto leading-relaxed">
             Give a task to the HiveMesh agent in your chat or terminal. The Orchestrator will compute the critical path, allocate isolated Git worktrees, and display active parallel agents here in real time.
           </p>
@@ -116,7 +55,7 @@
           
           <!-- Master Orchestrator Card -->
           <div class="max-w-sm mx-auto p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 to-purple-950/20 border border-indigo-500/40 text-center shadow-lg relative">
-            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-mono bg-indigo-600 text-white px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider shadow">
+            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-mono bg-indigo-600 text-white px-3 py-0.5 rounded-full font-bold uppercase tracking-wider shadow">
               Master Orchestrator
             </span>
             <div class="text-xs font-bold text-indigo-300 mt-1" id="orch-task-summary">Coordinating Swarm</div>
@@ -137,18 +76,11 @@
 
       </div>
 
-      <!-- Bottom Canvas Footer -->
-      <div class="flex items-center justify-between text-[11px] font-mono text-[var(--muted)] border-t border-[var(--border)] pt-3">
-        <span>Real-time event stream active (SSE)</span>
-        <span class="text-emerald-400">SQLite FTS5 Blackboard + AST Bus Verified</span>
-      </div>
-
     </div>
-
   </main>
 
   <!-- =========================================================================
-       3. REAL-TIME LOGIC & SSE STREAMING
+       REAL-TIME SSE STREAMING & CANVAS LOGIC
        ========================================================================= -->
   <script>
     let activeSwarm = null;
@@ -158,42 +90,11 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    async function editConversationTitle() {
-      const el = document.getElementById('conversation-title');
-      const oldTitle = el.innerText.trim();
-      const newTitle = prompt('Enter conversation topic / mission title:', oldTitle);
-      if (newTitle && newTitle.trim() && newTitle.trim() !== oldTitle) {
-        try {
-          const res = await fetch('/api/session/title', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: newTitle.trim() })
-          });
-          const data = await res.json();
-          if (data.success && data.title) {
-            el.innerText = data.title;
-          }
-        } catch (err) {
-          console.error('Failed to update session title:', err);
-        }
-      }
-    }
-
     async function fetchStatus() {
       try {
         const res = await fetch('/api/status');
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
-
-        // Project Info
-        document.getElementById('proj-name').innerText = data.project.name;
-        document.getElementById('proj-branch').innerText = data.project.branch;
-        document.getElementById('proj-commit').innerText = '#' + data.project.commit;
-
-        // Session / Conversation Topic
-        if (data.session && data.session.title) {
-          document.getElementById('conversation-title').innerText = data.session.title;
-        }
 
         currentPlan = data.plan || {};
 
@@ -210,24 +111,31 @@
     }
 
     function renderEmptyState() {
-      document.getElementById('empty-state').classList.remove('hidden');
-      document.getElementById('agents-grid').classList.add('hidden');
-      document.getElementById('active-swarm-label').innerHTML = `Active Swarm: <strong class="text-zinc-500">None</strong>`;
-      document.getElementById('header-status-badge').className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center gap-1";
-      document.getElementById('badge-text').innerText = "Orchestrator Idle";
+      const emptyEl = document.getElementById('empty-state');
+      const gridEl = document.getElementById('agents-grid');
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (gridEl) gridEl.classList.add('hidden');
     }
 
     function renderActiveSwarm(swarm, plan) {
-      document.getElementById('empty-state').classList.add('hidden');
-      document.getElementById('agents-grid').classList.remove('hidden');
-      document.getElementById('active-swarm-label').innerHTML = `Active Swarm: <strong class="text-indigo-400">${swarm.id}</strong>`;
-      document.getElementById('header-status-badge').className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1";
-      document.getElementById('badge-text').innerText = `${swarm.worktrees.length} Agents Running`;
+      const emptyEl = document.getElementById('empty-state');
+      const gridEl = document.getElementById('agents-grid');
+      if (emptyEl) emptyEl.classList.add('hidden');
+      if (gridEl) gridEl.classList.remove('hidden');
 
-      document.getElementById('orch-plan-count').innerText = `${swarm.worktrees.length} Parallel Agents Deployed`;
+      const orchSummary = document.getElementById('orch-task-summary');
+      if (orchSummary) {
+        orchSummary.innerText = `Active Swarm: ${swarm.id}`;
+      }
+
+      const orchCount = document.getElementById('orch-plan-count');
+      if (orchCount) {
+        orchCount.innerText = `${swarm.worktrees.length} Parallel Agents Deployed`;
+      }
 
       const colors = ["#3b82f6", "#a855f7", "#10b981", "#f43f5e", "#f59e0b", "#06b6d4"];
       const container = document.getElementById('cards-container');
+      if (!container) return;
 
       container.innerHTML = swarm.worktrees.map((wt, idx) => {
         const color = colors[idx % colors.length];
@@ -252,19 +160,10 @@
     function initSSE() {
       if (window.location.protocol.startsWith('http')) {
         const evt = new EventSource('/events');
-        evt.onopen = () => {
-          document.getElementById('live-dot').className = "w-2 h-2 rounded-full bg-emerald-400 status-ring";
-          document.getElementById('live-text').innerText = "Live Observatory";
-        };
-        evt.onerror = () => {
-          document.getElementById('live-dot').className = "w-2 h-2 rounded-full bg-rose-500";
-          document.getElementById('live-text').innerText = "Disconnected";
-        };
         evt.addEventListener('swarm_created', () => fetchStatus());
         evt.addEventListener('swarm_cleaned', () => fetchStatus());
         evt.addEventListener('agent_steered', () => fetchStatus());
         evt.addEventListener('orchestrator_thinking', () => fetchStatus());
-        evt.addEventListener('session_updated', () => fetchStatus());
       }
     }
 
