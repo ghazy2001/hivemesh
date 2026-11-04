@@ -26,6 +26,7 @@ let clients: SSEClient[] = [];
 let clientIdCounter = 0;
 let isSwarmPaused = false;
 let currentSwarmPlan: Record<string, string> = {};
+let currentSessionTitle = "Autonomous Swarm & Agensi Skill Launch";
 
 export function broadcastEvent(event: string, data: any): void {
   const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -137,6 +138,13 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
     if (!fs.existsSync(hivemeshDir)) {
       try { fs.mkdirSync(hivemeshDir, { recursive: true }); } catch {}
     }
+    const sessionFile = path.join(hivemeshDir, "session.json");
+    if (fs.existsSync(sessionFile)) {
+      try {
+        const sData = JSON.parse(fs.readFileSync(sessionFile, "utf-8"));
+        if (sData.title) currentSessionTitle = sData.title;
+      } catch {}
+    }
     const dbPath = path.join(hivemeshDir, "blackboard.db");
     const blackboard = new Blackboard(dbPath);
 
@@ -190,6 +198,9 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
                 branch: currentBranch,
                 commit: commitHash,
               },
+              session: {
+                title: currentSessionTitle,
+              },
               swarms,
               totalWorktrees,
               isPaused: isSwarmPaused,
@@ -212,6 +223,33 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
         return;
       }
 
+      // 2b. Session / Conversation Title API
+      if (url === "/api/session/title" && req.method === "POST") {
+        try {
+          const body = await parseBody(req);
+          if (body.title && typeof body.title === "string") {
+            currentSessionTitle = body.title.trim();
+            try {
+              fs.writeFileSync(
+                path.join(hivemeshDir, "session.json"),
+                JSON.stringify({ title: currentSessionTitle }, null, 2)
+              );
+            } catch {}
+            blackboard.post("session:title", "conversation_topic", currentSessionTitle, "orchestrator");
+            broadcastEvent("session_updated", { title: currentSessionTitle });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: true, title: currentSessionTitle }));
+            return;
+          }
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid title" }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+        return;
+      }
+
       // 3. Orchestrate Swarm from Prompt
       if (url === "/api/swarm/orchestrate" && req.method === "POST") {
         try {
@@ -222,6 +260,15 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
             res.end(JSON.stringify({ error: "Missing or invalid prompt" }));
             return;
           }
+
+          currentSessionTitle = prompt;
+          try {
+            fs.writeFileSync(
+              path.join(hivemeshDir, "session.json"),
+              JSON.stringify({ title: currentSessionTitle }, null, 2)
+            );
+          } catch {}
+          broadcastEvent("session_updated", { title: currentSessionTitle });
 
           const { roles, plan } = inferDynamicRoles(prompt);
           currentSwarmPlan = plan;

@@ -31,15 +31,15 @@
 <body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-500/20">
 
   <!-- =========================================================================
-       1. TOP HEADER (Clean Project Telemetry & Live Connection)
+       1. TOP HEADER (Clean Project Telemetry, Chat Topic & Live Connection)
        ========================================================================= -->
   <header class="border-b border-[var(--border)] bg-[var(--card)] px-6 py-3.5 flex items-center justify-between shrink-0">
     <div class="flex items-center space-x-3.5">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/30 flex items-center justify-center text-base shadow-sm">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/30 flex items-center justify-center text-lg shadow-sm">
         🐝
       </div>
       <div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2.5">
           <h1 class="text-sm font-bold tracking-tight text-[var(--foreground)]">HiveMesh</h1>
           <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--card-inner)] border border-[var(--border)] text-zinc-400">v0.3.0</span>
           <span id="header-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
@@ -47,12 +47,29 @@
             <span id="badge-text">Orchestrator Idle</span>
           </span>
         </div>
-        <div class="flex items-center space-x-2 text-[11px] font-mono text-[var(--muted)] mt-0.5">
-          <span id="proj-name">Loading project...</span>
-          <span>•</span>
-          <span class="text-indigo-400 font-medium" id="proj-branch">main</span>
-          <span>•</span>
-          <span class="text-zinc-500" id="proj-commit">#HEAD</span>
+
+        <!-- Project Name & Conversation Title Row -->
+        <div class="flex flex-wrap items-center gap-2.5 text-xs font-mono mt-1">
+          <!-- 1. اسم المشروع الشغال فيه -->
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300">
+            <span class="text-indigo-400 text-[11px] font-semibold">📁 Project:</span>
+            <strong id="proj-name" class="text-white text-[11px] tracking-wide">Loading...</strong>
+            <span class="text-indigo-400/40">•</span>
+            <span id="proj-branch" class="text-indigo-300 text-[11px]">main</span>
+            <span class="text-indigo-400/40">•</span>
+            <span id="proj-commit" class="text-zinc-400 text-[11px]">#HEAD</span>
+          </div>
+
+          <span class="text-zinc-700 hidden sm:inline">|</span>
+
+          <!-- 2. عنوان المحادثة / المهمة -->
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/25 text-emerald-300">
+            <span class="text-emerald-400 text-[11px] font-semibold">💬 Chat / Topic:</span>
+            <span id="conversation-title" class="text-emerald-200 text-[11px] font-medium max-w-[340px] truncate" title="Click pencil to rename topic">
+              Building HiveMesh Swarm & Mission Control
+            </span>
+            <button onclick="editConversationTitle()" class="hover:text-white text-[11px] opacity-75 hover:opacity-100 transition cursor-pointer" title="Edit Conversation Title">✏️</button>
+          </div>
         </div>
       </div>
     </div>
@@ -141,6 +158,27 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    async function editConversationTitle() {
+      const el = document.getElementById('conversation-title');
+      const oldTitle = el.innerText.trim();
+      const newTitle = prompt('Enter conversation topic / mission title:', oldTitle);
+      if (newTitle && newTitle.trim() && newTitle.trim() !== oldTitle) {
+        try {
+          const res = await fetch('/api/session/title', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle.trim() })
+          });
+          const data = await res.json();
+          if (data.success && data.title) {
+            el.innerText = data.title;
+          }
+        } catch (err) {
+          console.error('Failed to update session title:', err);
+        }
+      }
+    }
+
     async function fetchStatus() {
       try {
         const res = await fetch('/api/status');
@@ -151,6 +189,11 @@
         document.getElementById('proj-name').innerText = data.project.name;
         document.getElementById('proj-branch').innerText = data.project.branch;
         document.getElementById('proj-commit').innerText = '#' + data.project.commit;
+
+        // Session / Conversation Topic
+        if (data.session && data.session.title) {
+          document.getElementById('conversation-title').innerText = data.session.title;
+        }
 
         currentPlan = data.plan || {};
 
@@ -221,6 +264,7 @@
         evt.addEventListener('swarm_cleaned', () => fetchStatus());
         evt.addEventListener('agent_steered', () => fetchStatus());
         evt.addEventListener('orchestrator_thinking', () => fetchStatus());
+        evt.addEventListener('session_updated', () => fetchStatus());
       }
     }
 
