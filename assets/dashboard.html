@@ -87,11 +87,11 @@
       <div class="flex flex-col lg:flex-row gap-6 items-stretch w-full">
         
         <!-- ===================================================================
-             LEFT DECK: ACTIVE CONVERSATION & OPERATIONS STREAM
+             LEFT DECK: ACTIVE CONVERSATION & OPERATIONS STREAM (Takes full column height)
              =================================================================== -->
-        <div class="w-full lg:w-[460px] shrink-0 flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-b from-indigo-950/25 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300" id="main-agent-card">
+        <div class="w-full lg:w-[460px] shrink-0 flex flex-col p-6 rounded-2xl bg-gradient-to-b from-indigo-950/25 to-[var(--card-inner)] border border-indigo-500/30 shadow-xl relative transition-all duration-300" id="main-agent-card">
           
-          <div class="space-y-4">
+          <div class="space-y-4 shrink-0">
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-indigo-500/20 pb-3.5">
               <div class="flex items-center gap-2">
@@ -120,27 +120,26 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- 2. Live Operations Stream ("العمليات اللي بتتم زي عندنا") -->
-            <div class="space-y-2 pt-1">
-              <div class="text-[10px] font-mono text-indigo-300 uppercase tracking-wider flex items-center justify-between">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-                  <span>Live Operations Stream</span>
-                </span>
-                <span id="ops-count-badge" class="text-zinc-500 text-[9px] font-mono">Real-Time Actions</span>
-              </div>
-
-              <!-- Sleek process list mimicking Antigravity tool-call items -->
-              <div id="operations-list-box" class="space-y-1.5 text-xs font-mono max-h-[240px] overflow-y-auto pr-1">
-                <!-- Dynamically populated from transcript tool_calls -->
-              </div>
+          <!-- 2. Live Operations Stream taking ENTIRE remaining vertical column -->
+          <div class="flex-1 min-h-0 flex flex-col pt-3 space-y-2">
+            <div class="text-[10px] font-mono text-indigo-300 uppercase tracking-wider flex items-center justify-between shrink-0">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
+                <span>Live Operations Stream</span>
+              </span>
+              <span id="ops-count-badge" class="text-zinc-500 text-[9px] font-mono">Real-Time Actions</span>
             </div>
 
+            <!-- Sleek process list stretching to fill the entire column -->
+            <div id="operations-list-box" class="flex-1 min-h-[300px] overflow-y-auto pr-1 space-y-1.5 text-xs font-mono">
+              <!-- Dynamically populated from transcript tool_calls -->
+            </div>
           </div>
 
           <!-- Bottom Status Footer -->
-          <div class="pt-3.5 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+          <div class="pt-3.5 border-t border-indigo-500/20 mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500 shrink-0">
             <span class="flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
               <span>Brain Transcript Mirror Linked</span>
@@ -189,6 +188,46 @@
       </div>
 
     </div>
+
+    <!-- =========================================================================
+         INSPECTOR MODAL: FULL ACTIVITY & LIFECYCLE DEEP-DIVE
+         ========================================================================= -->
+    <div id="inspector-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 lg:p-8 animate-enter" onclick="handleModalBackdropClick(event)">
+      <div class="w-full max-w-4xl max-h-[88vh] rounded-2xl bg-[#0e0e13] border border-indigo-500/40 shadow-2xl flex flex-col overflow-hidden text-zinc-200 font-mono" onclick="event.stopPropagation()">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-zinc-800 bg-zinc-900/70 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl" id="modal-icon">🤖</span>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold text-white tracking-wide" id="modal-title">Agent Inspector</h2>
+                <span id="modal-badge" class="text-[10px] px-2 py-0.5 rounded font-semibold border">STATUS</span>
+              </div>
+              <div class="text-[11px] text-zinc-400 mt-0.5" id="modal-subtitle">Subagent ID / Worktree info</div>
+            </div>
+          </div>
+          
+          <button onclick="closeInspectorModal()" class="px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-xs border border-zinc-700 transition cursor-pointer flex items-center gap-1.5">
+            <span>Close</span>
+            <span class="text-[10px] text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-700">Esc</span>
+          </button>
+        </div>
+
+        <!-- Modal Scrollable Body -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-5 text-xs leading-relaxed" id="modal-body">
+          <!-- Dynamically filled with Mission, Full Prompt, Step Timeline, Files, AST Status -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-3 border-t border-zinc-800 bg-zinc-900/40 flex items-center justify-between text-[11px] text-zinc-500 shrink-0">
+          <span id="modal-footer-info">Live Antigravity Transcript Mirror</span>
+          <span class="text-emerald-400 font-semibold">Synchronized with IDE State ✓</span>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 
   <!-- =========================================================================
@@ -198,6 +237,8 @@
     let activeConversationId = null;
     let autoFollow = true;
     let lastRenderedPrompt = '';
+    let currentBrainData = null;
+    let currentSwarmsData = null;
 
     function escapeHtml(str) {
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -245,6 +286,9 @@
 
         const brain = data.brain;
         if (!brain) return;
+
+        currentBrainData = brain;
+        currentSwarmsData = data.swarms || [];
 
         // 1. Render Top Conversation Chips
         renderConversationChips(brain.allConvs || [], brain.activeId);
@@ -412,7 +456,8 @@
           // CREATE ONCE
           const div = document.createElement('div');
           div.id = card.id;
-          div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-zinc-700 transition shadow-md space-y-2.5 animate-enter";
+          div.className = "p-4 rounded-xl bg-black/40 border border-[var(--border)] hover:border-indigo-500/60 hover:bg-zinc-900/60 transition shadow-md space-y-2.5 animate-enter cursor-pointer group";
+          div.onclick = () => openCardInspector(card.id);
 
           let middleContent = '';
           if (card.kind === 'subagent') {
@@ -467,14 +512,19 @@
                 <span class="text-sm">${card.icon}</span>
                 ${escapeHtml(card.title)}
               </span>
-              <span id="badge-${card.id}" class="text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}">
-                ${escapeHtml(card.badge)}
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span id="badge-${card.id}" class="text-[9px] font-mono px-2 py-0.5 rounded font-semibold border ${card.badgeClass}">
+                  ${escapeHtml(card.badge)}
+                </span>
+                <span class="text-[11px] text-zinc-500 group-hover:text-indigo-400 font-mono transition">↗</span>
+              </div>
             </div>
             ${middleContent}
             <div class="pt-2 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80">
               <span class="truncate text-zinc-400" id="foot-${card.id}">${escapeHtml(card.footer)}</span>
-              <span class="text-emerald-400/90 font-semibold shrink-0">Protected ✓</span>
+              <span class="text-indigo-400/90 group-hover:text-indigo-300 font-semibold shrink-0 transition flex items-center gap-1">
+                <span>View Full Details</span> ↗
+              </span>
             </div>
           `;
           grid.appendChild(div);
@@ -489,6 +539,205 @@
         }
       });
     }
+
+    function openCardInspector(cardId) {
+      if (!currentBrainData) return;
+      const modal = document.getElementById('inspector-modal');
+      const titleEl = document.getElementById('modal-title');
+      const badgeEl = document.getElementById('modal-badge');
+      const subtitleEl = document.getElementById('modal-subtitle');
+      const iconEl = document.getElementById('modal-icon');
+      const bodyEl = document.getElementById('modal-body');
+      const footerInfoEl = document.getElementById('modal-footer-info');
+
+      if (!modal || !bodyEl) return;
+
+      // 1. Is it a Subagent?
+      const subagent = (currentBrainData.subagents || []).find(sa => `subagent-${sa.role.replace(/[^a-zA-Z0-9]/g, '-')}` === cardId);
+      if (subagent) {
+        iconEl.innerText = "🤖";
+        titleEl.innerText = subagent.role;
+        const isDone = (subagent.status === 'DONE');
+        badgeEl.innerText = isDone ? 'COMPLETED ✓' : 'RUNNING';
+        badgeEl.className = `text-[10px] px-2 py-0.5 rounded font-semibold border ${isDone ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-blue-400 bg-blue-500/10 border-blue-500/30'}`;
+        subtitleEl.innerText = `Subagent ID: #${(subagent.id || 'Active').slice(0, 16)} • Autonomous Swarm Unit`;
+        footerInfoEl.innerText = `Recorded in isolated subagent session #${(subagent.id || '').slice(0, 12)}`;
+
+        // Detailed Timeline Steps
+        const stepsHtml = (subagent.steps && subagent.steps.length > 0)
+          ? subagent.steps.map((st, i) => {
+              const timeStr = st.time ? new Date(st.time).toLocaleTimeString() : '';
+              return `
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-black/50 border border-zinc-800/80 hover:border-zinc-700 transition">
+                  <span class="text-emerald-400 text-xs mt-0.5 shrink-0">●</span>
+                  <div class="flex-1 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-indigo-400 font-bold">${escapeHtml(st.tool)}</span>
+                      <span class="text-[10px] text-zinc-500">${escapeHtml(timeStr)}</span>
+                    </div>
+                    <div class="text-zinc-200 text-xs leading-relaxed font-mono">${escapeHtml(st.label || st.summary)}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : `<div class="text-zinc-500 italic p-3 bg-black/30 rounded-lg border border-zinc-800">No detailed steps recorded yet.</div>`;
+
+        // Files Chips
+        const filesHtml = (subagent.files && subagent.files.length > 0)
+          ? `
+            <div class="space-y-2">
+              <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider">Created / Modified Artifacts (${subagent.files.length}):</div>
+              <div class="flex flex-wrap gap-2">
+                ${subagent.files.map(f => `<span class="px-2.5 py-1 rounded-lg bg-zinc-800 text-xs text-indigo-300 border border-zinc-700 flex items-center gap-1.5"><span class="text-emerald-400 text-[10px]">📄</span><span>${escapeHtml(f)}</span></span>`).join('')}
+              </div>
+            </div>
+          `
+          : '';
+
+        bodyEl.innerHTML = `
+          <!-- Mission / Assignment Directive -->
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-bold text-indigo-300 tracking-wider flex items-center justify-between">
+              <span>Full Mission & Prompt Directive:</span>
+              <span class="text-[10px] text-zinc-500">Autonomous Prompt</span>
+            </div>
+            <div class="p-4 rounded-xl bg-black/60 border border-indigo-500/25 text-zinc-200 whitespace-pre-wrap leading-relaxed max-h-[180px] overflow-y-auto">
+${escapeHtml(subagent.prompt || subagent.mission)}
+            </div>
+          </div>
+
+          <!-- Execution Status -->
+          <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-emerald-300">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${isDone ? 'bg-emerald-400' : 'bg-blue-400 status-ring'}"></span>
+              <span class="font-semibold">${escapeHtml(subagent.action)}</span>
+            </div>
+            <span class="text-[10px] text-emerald-400/90 font-semibold">Zero Merge Conflicts</span>
+          </div>
+
+          ${filesHtml}
+
+          <!-- Detailed Execution Timeline -->
+          <div class="space-y-2 pt-2">
+            <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider flex items-center justify-between">
+              <span>Chronological Activity & Tool Log:</span>
+              <span class="text-[10px] text-zinc-500">${subagent.steps?.length || 0} Step(s)</span>
+            </div>
+            <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+              ${stepsHtml}
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        return;
+      }
+
+      // 2. Is it a Worktree?
+      const worktree = (currentSwarmsData?.[0]?.worktrees || []).find(wt => `worktree-${wt.role}` === cardId);
+      if (worktree) {
+        iconEl.innerText = "🌿";
+        titleEl.innerText = `Worktree: ${worktree.role.toUpperCase()}`;
+        badgeEl.innerText = 'GIT WORKTREE';
+        badgeEl.className = 'text-[10px] px-2 py-0.5 rounded font-semibold border text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+        subtitleEl.innerText = `Isolated branch: ${worktree.branch}`;
+        footerInfoEl.innerText = `Worktree Path: ${worktree.path}`;
+
+        bodyEl.innerHTML = `
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-bold text-indigo-300 tracking-wider">Domain Scope & Responsibility:</div>
+            <div class="p-4 rounded-xl bg-black/60 border border-zinc-800 text-zinc-200 leading-relaxed">
+              ${escapeHtml(worktree.description || 'Isolated domain slice for concurrent swarm development.')}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 space-y-1">
+              <div class="text-[10px] text-zinc-500 uppercase">Target Monorepo Scope</div>
+              <div class="text-indigo-300 font-bold text-xs">${escapeHtml(worktree.targetPackage || 'packages/twenty-crm')}</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 space-y-1">
+              <div class="text-[10px] text-zinc-500 uppercase">Git Worktree State</div>
+              <div class="text-emerald-400 font-bold text-xs flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Isolated & Conflict-Free</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider">Worktree Path on Disk:</div>
+            <div class="p-3 rounded-xl bg-black/50 border border-zinc-800 text-zinc-300 text-xs select-all">
+              ${escapeHtml(worktree.path)}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider">Swarm Coordination & AST Protection:</div>
+            <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 space-y-1 text-xs">
+              <div>Git Branch: <span class="font-bold text-white">${escapeHtml(worktree.branch)}</span></div>
+              <div class="text-[11px] text-zinc-400 leading-relaxed">Changes made by this agent are confined to this isolated worktree, eliminating git index locks and AST conflicts before merge.</div>
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        return;
+      }
+
+      // 3. Primary Agent
+      if (cardId === 'primary-agent-card') {
+        iconEl.innerText = "🤖";
+        titleEl.innerText = "Primary Antigravity Agent";
+        badgeEl.innerText = 'ACTIVE AGENT';
+        badgeEl.className = 'text-[10px] px-2 py-0.5 rounded font-semibold border text-indigo-400 bg-indigo-500/10 border-indigo-500/30';
+        subtitleEl.innerText = `Workspace: D:\\twenty-crm`;
+        footerInfoEl.innerText = `Direct Chat Session #${currentBrainData.activeId}`;
+
+        bodyEl.innerHTML = `
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-bold text-indigo-300 tracking-wider">Active Chat Directive (Prompt):</div>
+            <div class="p-4 rounded-xl bg-black/60 border border-indigo-500/25 text-white whitespace-pre-wrap leading-relaxed">
+              "${escapeHtml(currentBrainData.prompt)}"
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider">Recent Operations Stream (${currentBrainData.recentOps?.length || 0}):</div>
+            <div class="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
+              ${(currentBrainData.recentOps || []).map(op => `
+                <div class="p-2.5 rounded-lg bg-black/40 border border-zinc-800 flex items-center justify-between text-xs">
+                  <span class="text-zinc-200">${escapeHtml(op.label || op.summary)}</span>
+                  <span class="text-[10px] text-zinc-500">${escapeHtml(op.tool)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeInspectorModal() {
+      const modal = document.getElementById('inspector-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function handleModalBackdropClick(event) {
+      if (event.target.id === 'inspector-modal') {
+        closeInspectorModal();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeInspectorModal();
+    });
 
     function initSSE() {
       if (window.location.protocol.startsWith('http')) {

@@ -69,16 +69,17 @@ export function getAntigravityBrainState(selectedId) {
                             const role = String(tc.args.Role || "Subagent").replace(/^"|"$/g, "");
                             const type = String(tc.args.TypeName || "subagent").replace(/^"|"$/g, "");
                             const rawPrompt = String(tc.args.Prompt || "").replace(/^"|"$/g, "");
-                            const mission = rawPrompt.split("\n")[0].slice(0, 90).trim() || `Execute autonomous directives for ${role}`;
+                            const mission = rawPrompt.split("\n")[0].slice(0, 100).trim() || `Execute autonomous directives for ${role}`;
                             label = `Launched Subagent: ${role}`;
                             subagentsMap.set(role, {
                                 role,
                                 type,
-                                prompt: rawPrompt.slice(0, 100),
+                                prompt: rawPrompt,
                                 mission,
                                 action: "Operating in isolated workspace",
                                 status: "ACTIVE",
-                                files: []
+                                files: [],
+                                steps: []
                             });
                         }
                         else if (tc.name === "read_file") {
@@ -118,22 +119,40 @@ export function getAntigravityBrainState(selectedId) {
                     try {
                         const subLines = fs.readFileSync(subTPath, "utf-8").trim().split("\n");
                         const files = [];
+                        const subSteps = [];
                         for (const subLine of subLines) {
                             try {
                                 const sStep = JSON.parse(subLine);
-                                if (sStep.tool_calls) {
+                                if (sStep.tool_calls && Array.isArray(sStep.tool_calls)) {
                                     for (const stc of sStep.tool_calls) {
+                                        const rawSumm = (stc.args && (stc.args.toolSummary || stc.args.Path || stc.args.CommandLine)) || stc.name;
+                                        const cleanSumm = String(rawSumm).replace(/^"|"$/g, "");
+                                        let label = `Executed ${cleanSumm}`;
                                         if (stc.name === "write_file" || stc.name === "edit_file") {
-                                            const p = stc.args && stc.args.Path ? path.basename(String(stc.args.Path).replace(/"/g, "")) : "";
+                                            const p = path.basename(cleanSumm.replace(/\\/g, "/"));
+                                            label = `Created/Updated ${p}`;
                                             if (p && !files.includes(p))
                                                 files.push(p);
                                         }
+                                        else if (stc.name === "run_command") {
+                                            label = `Ran: ${cleanSumm}`;
+                                        }
+                                        else if (stc.name === "send_message") {
+                                            label = `Reported completion back to parent agent`;
+                                        }
+                                        subSteps.push({
+                                            tool: stc.name,
+                                            summary: cleanSumm,
+                                            label,
+                                            time: sStep.created_at
+                                        });
                                     }
                                 }
                             }
                             catch { }
                         }
                         sa.files = files;
+                        sa.steps = subSteps;
                         if (subLines.length > 0) {
                             const lastStep = JSON.parse(subLines[subLines.length - 1]);
                             sa.status = lastStep.status === "DONE" ? "DONE" : "RUNNING";
@@ -182,7 +201,7 @@ export function getAntigravityBrainState(selectedId) {
             activeId: target.id,
             allConvs: convs.slice(0, 8).map((c) => ({ id: c.id, mtime: c.mtime })),
             prompt,
-            recentOps: operations.slice(-12),
+            recentOps: operations.slice(-40),
             subagents,
             activeTasks
         };

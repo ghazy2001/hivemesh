@@ -15,6 +15,12 @@ export interface BrainOperation {
     label: string;
     stepIndex: number;
 }
+export interface SubagentExecutionStep {
+    tool: string;
+    summary: string;
+    label: string;
+    time?: string;
+}
 export interface BrainSubagent {
     id?: string;
     role: string;
@@ -24,6 +30,7 @@ export interface BrainSubagent {
     action: string;
     status: string;
     files: string[];
+    steps: SubagentExecutionStep[];
 }
 export interface BrainState {
     activeId: string;
