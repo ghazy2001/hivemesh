@@ -164,6 +164,11 @@
 
         currentPlan = data.plan || {};
 
+        if (data.orchestratorPhase === 'analyzing') {
+          showAnalyzing(data.prompt, Object.keys(data.plan || {}));
+          return;
+        }
+
         if (data.swarms && data.swarms.length > 0) {
           activeSwarm = data.swarms[0];
           renderActiveSwarm(activeSwarm, currentPlan, data.prompt);
@@ -293,7 +298,7 @@
 
             setTimeout(() => {
               renderActiveSwarm(activeSwarm, currentPlan, data.prompt);
-            }, 800);
+            }, 2000);
           } catch (err) {
             console.error(err);
           }
@@ -306,11 +311,15 @@
         });
 
         evt.addEventListener('agent_steered', () => fetchStatus());
+        evt.onerror = () => {
+          // If SSE dropped, automatic polling below ensures live updates!
+        };
       }
     }
 
     fetchStatus();
     initSSE();
+    setInterval(fetchStatus, 1500);
   </script>
 </body>
 </html>

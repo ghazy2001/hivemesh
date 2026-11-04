@@ -35,6 +35,9 @@ export function broadcastEvent(event: string, data: any): void {
   for (const client of clients) {
     try {
       client.res.write(payload);
+      if (typeof (client.res as any).flush === "function") {
+        (client.res as any).flush();
+      }
     } catch {
       // client disconnected
     }
@@ -104,6 +107,17 @@ export function inferDynamicRoles(prompt: string): { roles: string[]; plan: Reco
         "entity-models": "Update ORM entities, relations, and type-safe schema definitions",
         "repository-services": "Implement data access repositories and query builders with indexing",
         "integrity-tests": "Run foreign key consistency, constraint validation, and migration tests"
+      }
+    };
+  }
+  if (p.includes("analytics") || p.includes("dashboard") || p.includes("chart") || p.includes("metrics") || p.includes("export")) {
+    return {
+      roles: ["aggregation-pipeline", "date-filter-engine", "chart-visualizer", "export-streamer"],
+      plan: {
+        "aggregation-pipeline": "Build time-series SQL aggregation queries and metric summarization endpoints",
+        "date-filter-engine": "Implement timezone-aware date range presets and custom interval query builders",
+        "chart-visualizer": "Create interactive chart components with dynamic tooltips and responsive metrics",
+        "export-streamer": "Implement memory-efficient streaming CSV/Excel exporter with delimiter sanitization"
       }
     };
   }
@@ -302,6 +316,9 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
             message: `Analyzing critical path for: "${prompt}". Spawning ${roles.length} parallel agents.`
           });
 
+          // Wait 350ms so Node.js flushes the SSE event to the browser before blocking git worktree creation begins!
+          await new Promise((resolve) => setTimeout(resolve, 350));
+
           const swarm = createSwarm(targetDir, roles, baseBranch);
           blackboard.post("architecture:plan", "initial_decomposition", JSON.stringify(plan), "orchestrator");
 
@@ -411,9 +428,13 @@ export function startUiServer(requestedPort = 4242, autoOpen = true): Promise<{ 
       if (url === "/events" || url === "/api/events") {
         res.writeHead(200, {
           "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
+          "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
         });
+        if (typeof res.flushHeaders === "function") {
+          res.flushHeaders();
+        }
 
         const id = ++clientIdCounter;
         clients.push({ id, res });
