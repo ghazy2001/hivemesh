@@ -10,9 +10,13 @@ export interface BrainConversation {
     mtime: number;
 }
 export interface BrainOperation {
+    id: string;
     tool: string;
     summary: string;
     label: string;
+    args?: Record<string, any>;
+    output?: string;
+    time?: string;
     stepIndex: number;
 }
 export interface SubagentExecutionStep {

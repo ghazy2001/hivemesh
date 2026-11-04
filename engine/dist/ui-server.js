@@ -50,7 +50,17 @@ export function getAntigravityBrainState(selectedId) {
         let prompt = "";
         const operations = [];
         const subagentsMap = new Map();
-        for (const line of lines) {
+        const cleanArgVal = (val) => {
+            if (typeof val === "string") {
+                let s = val.trim();
+                if (s.startsWith('"') && s.endsWith('"'))
+                    s = s.slice(1, -1);
+                return s;
+            }
+            return val;
+        };
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
             try {
                 const step = JSON.parse(line);
                 if (step.type === "USER_INPUT" && step.content) {
@@ -58,17 +68,64 @@ export function getAntigravityBrainState(selectedId) {
                     prompt = m ? m[1].trim() : step.content.trim();
                 }
                 if (step.tool_calls && Array.isArray(step.tool_calls)) {
-                    for (const tc of step.tool_calls) {
-                        const summary = (tc.args && (tc.args.toolSummary || tc.args.Summary)) || tc.name;
-                        const cleanSummary = String(summary).replace(/^"|"$/g, "");
-                        let label = `Ran ${cleanSummary}`;
-                        if (tc.name === "manage_task") {
-                            label = `Checked task ${cleanSummary}`;
+                    // Look ahead up to 4 lines for execution output
+                    let output = "";
+                    for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+                        try {
+                            const next = JSON.parse(lines[j]);
+                            if (next.content && typeof next.content === "string") {
+                                output = next.content;
+                                break;
+                            }
                         }
-                        else if (tc.name === "invoke_subagent" && tc.args) {
-                            const role = String(tc.args.Role || "Subagent").replace(/^"|"$/g, "");
-                            const type = String(tc.args.TypeName || "subagent").replace(/^"|"$/g, "");
-                            const rawPrompt = String(tc.args.Prompt || "").replace(/^"|"$/g, "");
+                        catch { }
+                    }
+                    step.tool_calls.forEach((tc, tcIdx) => {
+                        const cleanArgs = {};
+                        if (tc.args && typeof tc.args === "object") {
+                            for (const [k, v] of Object.entries(tc.args)) {
+                                cleanArgs[k] = cleanArgVal(v);
+                            }
+                        }
+                        const rawSumm = cleanArgs.toolSummary || cleanArgs.Summary || tc.name;
+                        const cleanSummary = String(rawSumm).replace(/^"|"$/g, "");
+                        let label = `Executed ${cleanSummary}`;
+                        if (tc.name === "read_file") {
+                            const base = cleanArgs.Path ? path.basename(String(cleanArgs.Path).replace(/\\/g, "/")) : "";
+                            label = base && base !== "read_file" ? `Read ${base}` : "Read file";
+                        }
+                        else if (tc.name === "edit_file") {
+                            const base = cleanArgs.Path ? path.basename(String(cleanArgs.Path).replace(/\\/g, "/")) : "";
+                            label = base && base !== "edit_file" ? `Updated ${base}` : "Updated file";
+                        }
+                        else if (tc.name === "write_file") {
+                            const base = cleanArgs.Path ? path.basename(String(cleanArgs.Path).replace(/\\/g, "/")) : "";
+                            label = base && base !== "write_file" ? `Created ${base}` : "Created file";
+                        }
+                        else if (tc.name === "manage_task") {
+                            const act = cleanArgs.Action || "status";
+                            const tId = cleanArgs.TaskId ? path.basename(String(cleanArgs.TaskId)) : "";
+                            if (act === "list")
+                                label = "Checked background tasks";
+                            else if (act === "kill")
+                                label = `Killed task ${tId}`;
+                            else
+                                label = tId ? `Checked task ${tId}` : "Checked task status";
+                        }
+                        else if (tc.name === "run_command") {
+                            const summ = cleanArgs.toolSummary;
+                            const cmd = cleanArgs.CommandLine || "";
+                            if (summ && summ !== "run_command")
+                                label = `Ran ${summ}`;
+                            else if (cmd)
+                                label = `Ran: ${String(cmd).split("\n")[0].slice(0, 50).trim()}`;
+                            else
+                                label = "Ran shell command";
+                        }
+                        else if (tc.name === "invoke_subagent") {
+                            const role = String(cleanArgs.Role || "Subagent").replace(/^"|"$/g, "");
+                            const type = String(cleanArgs.TypeName || "subagent").replace(/^"|"$/g, "");
+                            const rawPrompt = String(cleanArgs.Prompt || "").replace(/^"|"$/g, "");
                             const mission = rawPrompt.split("\n")[0].slice(0, 100).trim() || `Execute autonomous directives for ${role}`;
                             label = `Launched Subagent: ${role}`;
                             subagentsMap.set(role, {
@@ -83,19 +140,23 @@ export function getAntigravityBrainState(selectedId) {
                                 steps: []
                             });
                         }
-                        else if (tc.name === "read_file") {
-                            label = `Read ${path.basename(cleanSummary.replace(/\\/g, "/"))}`;
+                        else if (tc.name === "send_message") {
+                            label = "Sent message to subagent";
                         }
-                        else if (tc.name === "edit_file" || tc.name === "write_file") {
-                            label = `Updated ${path.basename(cleanSummary.replace(/\\/g, "/"))}`;
+                        else if (tc.name === "ask_question") {
+                            label = "Requested user input";
                         }
                         operations.push({
+                            id: `op-${step.step_index}-${tcIdx}`,
                             tool: tc.name,
                             summary: cleanSummary,
                             label,
+                            args: cleanArgs,
+                            output: output.slice(0, 1500),
+                            time: step.created_at,
                             stepIndex: step.step_index
                         });
-                    }
+                    });
                 }
                 if (step.content && typeof step.content === "string" && step.content.includes("Created the following subagent:")) {
                     const m = step.content.match(/"conversationId":\s*"([^"]+)"/);
@@ -206,7 +267,7 @@ export function getAntigravityBrainState(selectedId) {
             activeId: target.id,
             allConvs: convs.slice(0, 8).map((c) => ({ id: c.id, mtime: c.mtime })),
             prompt,
-            recentOps: operations.slice(-40),
+            recentOps: operations.slice(-50),
             subagents,
             activeTasks
         };

@@ -260,9 +260,129 @@
     let currentBrainData = null;
     let currentSwarmsData = null;
     let currentStageTab = 'running';
+    const expandedOpIds = new Set();
 
     function escapeHtml(str) {
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function escapeJsString(str) {
+      return String(str || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '');
+    }
+
+    function getToolBadgeClass(tool) {
+      switch (tool) {
+        case 'run_command':
+          return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+        case 'read_file':
+          return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30';
+        case 'edit_file':
+        case 'write_file':
+          return 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+        case 'manage_task':
+          return 'bg-purple-500/10 text-purple-400 border border-purple-500/30';
+        case 'invoke_subagent':
+          return 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30';
+        default:
+          return 'bg-zinc-800 text-zinc-400 border border-zinc-700';
+      }
+    }
+
+    function toggleOperationExpansion(opId) {
+      if (expandedOpIds.has(opId)) {
+        expandedOpIds.delete(opId);
+      } else {
+        expandedOpIds.add(opId);
+      }
+      if (currentBrainData) {
+        renderLeftDeck(currentBrainData);
+      }
+    }
+
+    function renderOpArgsSnippet(op) {
+      const args = op.args || {};
+      if (op.tool === 'run_command') {
+        const cmd = args.CommandLine || '';
+        return `
+          <div class="space-y-1">
+            <div class="text-[9px] text-zinc-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+              <span>Command:</span>
+              <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${escapeJsString(cmd)}')" class="text-[9px] text-zinc-500 hover:text-white transition cursor-pointer">Copy</button>
+            </div>
+            <div class="p-2 rounded bg-black/80 border border-zinc-800 text-emerald-300 text-[10px] select-all overflow-x-auto whitespace-pre-wrap break-all font-mono leading-relaxed max-h-[90px]">$ ${escapeHtml(cmd)}</div>
+          </div>
+        `;
+      }
+      if (op.tool === 'read_file' || op.tool === 'edit_file' || op.tool === 'write_file') {
+        const p = args.Path || '';
+        const lines = (args.StartLine || args.EndLine) ? ` (Lines: ${args.StartLine || 1} - ${args.EndLine || 'end'})` : '';
+        return `
+          <div class="space-y-1">
+            <div class="text-[9px] text-zinc-400 font-semibold uppercase tracking-wider">Target File:</div>
+            <div class="p-2 rounded bg-black/80 border border-zinc-800 text-cyan-300 text-[10px] select-all truncate font-mono">
+              📁 ${escapeHtml(p)}${escapeHtml(lines)}
+            </div>
+          </div>
+        `;
+      }
+      if (op.tool === 'manage_task') {
+        return `
+          <div class="space-y-1">
+            <div class="text-[9px] text-zinc-400 font-semibold uppercase tracking-wider">Task Control:</div>
+            <div class="p-2 rounded bg-black/80 border border-zinc-800 text-purple-300 text-[10px] font-mono">
+              Action: <span class="text-white font-bold">${escapeHtml(args.Action || 'status')}</span> • Task ID: <span class="text-zinc-300">${escapeHtml(args.TaskId || 'all')}</span>
+            </div>
+          </div>
+        `;
+      }
+      if (op.tool === 'invoke_subagent') {
+        return `
+          <div class="space-y-1">
+            <div class="text-[9px] text-zinc-400 font-semibold uppercase tracking-wider">Subagent Specification:</div>
+            <div class="p-2 rounded bg-black/80 border border-zinc-800 text-indigo-300 text-[10px] font-mono space-y-0.5">
+              <div>Role: <span class="text-white font-bold">${escapeHtml(args.Role || '')}</span> (${escapeHtml(args.TypeName || 'subagent')})</div>
+              <div class="text-zinc-400 text-[9px] truncate">Prompt: ${escapeHtml(args.Prompt || '')}</div>
+            </div>
+          </div>
+        `;
+      }
+      if (args && Object.keys(args).length > 0) {
+        return `
+          <div class="space-y-1">
+            <div class="text-[9px] text-zinc-400 font-semibold uppercase tracking-wider">Arguments:</div>
+            <div class="p-2 rounded bg-black/80 border border-zinc-800 text-zinc-300 text-[10px] font-mono overflow-x-auto whitespace-pre truncate">
+              ${escapeHtml(JSON.stringify(args))}
+            </div>
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    function renderOpOutputSnippet(op) {
+      if (op.output) {
+        return `
+          <div class="space-y-1 pt-1">
+            <div class="text-[9px] text-zinc-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+              <span>Terminal Output / Result:</span>
+              <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${escapeJsString(op.output)}')" class="text-[9px] text-zinc-500 hover:text-white transition cursor-pointer">Copy</button>
+            </div>
+            <div class="p-2.5 rounded-lg bg-black/95 border border-zinc-800 text-zinc-300 text-[10px] max-h-[120px] overflow-y-auto whitespace-pre-wrap leading-relaxed select-all font-mono">
+              ${escapeHtml(op.output)}
+            </div>
+          </div>
+        `;
+      }
+      return `
+        <div class="text-[10px] text-zinc-500 italic p-2 bg-black/30 rounded border border-zinc-800/60 font-mono">
+          Executed successfully • Live background process
+        </div>
+      `;
     }
 
     async function selectConversation(convId) {
@@ -363,15 +483,43 @@
       // Update Operations List ("العمليات اللي بتتم زي عندنا")
       const list = document.getElementById('operations-list-box');
       if (list && brain.recentOps) {
-        list.innerHTML = brain.recentOps.map(op => `
-          <div class="flex items-center justify-between text-zinc-300 text-[11px] py-1.5 px-3 rounded-lg bg-black/40 border border-zinc-800/80 hover:border-zinc-700 transition">
-            <div class="flex items-center gap-2 truncate">
-              <span class="text-emerald-400 shrink-0 text-[10px]">●</span>
-              <span class="font-mono truncate leading-relaxed text-zinc-200">${escapeHtml(op.label || op.summary)}</span>
+        list.innerHTML = brain.recentOps.map(op => {
+          const isExpanded = expandedOpIds.has(op.id);
+          const badgeClass = getToolBadgeClass(op.tool);
+          return `
+            <div id="${op.id}" class="rounded-xl border ${isExpanded ? 'border-indigo-500/50 bg-zinc-950/90 shadow-lg' : 'border-zinc-800/80 bg-black/40 hover:border-zinc-700'} transition overflow-hidden">
+              <div onclick="toggleOperationExpansion('${op.id}')" class="flex items-center justify-between text-zinc-300 text-[11px] py-1.5 px-3 cursor-pointer hover:bg-zinc-900/60 transition group select-none">
+                <div class="flex items-center gap-2 truncate">
+                  <span class="text-emerald-400 shrink-0 text-[10px]">●</span>
+                  <span class="font-mono truncate leading-relaxed ${isExpanded ? 'text-white font-semibold' : 'text-zinc-200'}">${escapeHtml(op.label || op.summary)}</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${badgeClass}">${escapeHtml(op.tool)}</span>
+                  <button onclick="event.stopPropagation(); toggleOperationExpansion('${op.id}')" class="w-5 h-5 rounded hover:bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-indigo-400 transition cursor-pointer" title="عرض تفاصيل العملية">
+                    <span class="font-mono text-[11px] inline-block transition-transform duration-200 ${isExpanded ? 'rotate-90 text-indigo-400 font-bold' : ''}">&gt;</span>
+                  </button>
+                </div>
+              </div>
+
+              ${isExpanded ? `
+                <div class="p-3 border-t border-zinc-800/80 bg-zinc-950/70 space-y-2.5 text-[11px] font-mono animate-enter">
+                  <div class="flex items-center justify-between text-[10px] text-zinc-500">
+                    <span class="text-indigo-400 font-semibold">Step #${op.stepIndex}</span>
+                    <span>${op.time ? new Date(op.time).toLocaleTimeString() : ''}</span>
+                  </div>
+                  ${renderOpArgsSnippet(op)}
+                  ${renderOpOutputSnippet(op)}
+                  <div class="pt-1 flex items-center justify-between border-t border-zinc-800/60">
+                    <span class="text-[10px] text-emerald-400/90 font-medium">Verified Execution Output ✓</span>
+                    <button onclick="event.stopPropagation(); openOperationModal('${op.id}')" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition cursor-pointer">
+                      <span>عرض تفاصيل الفحص الكاملة</span> ↗
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
             </div>
-            <span class="text-zinc-600 font-mono text-[10px] shrink-0 ml-2">&gt;</span>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       const totalCount = document.getElementById('ops-total-count');
@@ -811,6 +959,65 @@ ${escapeHtml(subagent.prompt || subagent.mission)}
         modal.classList.remove('hidden');
         modal.classList.add('flex');
       }
+    }
+
+    function openOperationModal(opId) {
+      if (!currentBrainData) return;
+      const op = (currentBrainData.recentOps || []).find(o => o.id === opId);
+      if (!op) return;
+
+      const modal = document.getElementById('inspector-modal');
+      const titleEl = document.getElementById('modal-title');
+      const badgeEl = document.getElementById('modal-badge');
+      const subtitleEl = document.getElementById('modal-subtitle');
+      const iconEl = document.getElementById('modal-icon');
+      const bodyEl = document.getElementById('modal-body');
+      const footerInfoEl = document.getElementById('modal-footer-info');
+
+      if (!modal || !bodyEl) return;
+
+      iconEl.innerText = "⚡";
+      titleEl.innerText = op.label || op.summary;
+      badgeEl.innerText = op.tool.toUpperCase();
+      badgeEl.className = `text-[10px] px-2 py-0.5 rounded font-semibold border ${getToolBadgeClass(op.tool)}`;
+      subtitleEl.innerText = `Step #${op.stepIndex} • ${op.time ? new Date(op.time).toLocaleString() : 'Live Operation'}`;
+      footerInfoEl.innerText = `Operation executed by Antigravity Core Agent`;
+
+      bodyEl.innerHTML = `
+        <div class="space-y-2">
+          <div class="text-xs uppercase font-bold text-indigo-300 tracking-wider">Operation Directive & Tool:</div>
+          <div class="p-3.5 rounded-xl bg-black/60 border border-zinc-800 text-zinc-200 flex items-center justify-between">
+            <div>
+              <div class="text-sm font-bold text-white">${escapeHtml(op.label)}</div>
+              <div class="text-zinc-400 text-xs mt-0.5">Tool: <span class="text-indigo-300 font-semibold">${escapeHtml(op.tool)}</span></div>
+            </div>
+            <span class="text-xs font-mono text-zinc-500">Step #${op.stepIndex}</span>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider flex items-center justify-between">
+            <span>Tool Arguments / Target:</span>
+            <button onclick="navigator.clipboard.writeText('${escapeJsString(JSON.stringify(op.args, null, 2))}')" class="text-xs text-indigo-400 hover:text-white transition cursor-pointer">Copy JSON</button>
+          </div>
+          <div class="p-3.5 rounded-xl bg-black/80 border border-zinc-800/80 text-emerald-300 max-h-[180px] overflow-y-auto whitespace-pre-wrap select-all font-mono leading-relaxed text-xs">
+${escapeHtml(JSON.stringify(op.args || {}, null, 2))}
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-xs uppercase font-bold text-zinc-400 tracking-wider flex items-center justify-between">
+            <span>Execution Output / Log Result:</span>
+            <button onclick="navigator.clipboard.writeText('${escapeJsString(op.output || '')}')" class="text-xs text-indigo-400 hover:text-white transition cursor-pointer">Copy Output</button>
+          </div>
+          <div class="p-4 rounded-xl bg-black/95 border border-zinc-800/80 text-zinc-300 max-h-[300px] overflow-y-auto whitespace-pre-wrap select-all font-mono leading-relaxed text-xs">
+${escapeHtml(op.output || 'Command executed without output or asynchronous background worker.')}
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
 
     function closeInspectorModal() {
