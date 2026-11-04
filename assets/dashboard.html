@@ -15,28 +15,7 @@
       --foreground: #f4f4f5;
       --muted: #71717a;
       --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.2);
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    }
-
-    [data-theme="emerald"] {
-      --bg: #030705;
-      --card: #09120c;
-      --card-inner: #0f1c14;
-      --border: #14281c;
-      --border-bright: #1f3d2b;
-      --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.2);
-    }
-
-    [data-theme="oled"] {
-      --bg: #000000;
-      --card: #080808;
-      --card-inner: #101010;
-      --border: #1a1a1a;
-      --border-bright: #262626;
-      --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.2);
     }
 
     @keyframes pulse-ring {
@@ -47,29 +26,12 @@
     .status-ring {
       animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-
-    @keyframes synapse-flow {
-      to { stroke-dashoffset: -32; }
-    }
-    .synapse-line {
-      stroke-dasharray: 6 6;
-      animation: synapse-flow 1.5s linear infinite;
-    }
-
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-    }
   </style>
 </head>
-<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-500/20 transition-colors duration-200">
+<body class="bg-[var(--bg)] text-[var(--foreground)] antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-500/20">
 
   <!-- =========================================================================
-       1. TOP HEADER (Telemetry & System Status)
+       1. TOP HEADER (Clean Project Telemetry & Live Connection)
        ========================================================================= -->
   <header class="border-b border-[var(--border)] bg-[var(--card)] px-6 py-3.5 flex items-center justify-between shrink-0">
     <div class="flex items-center space-x-3.5">
@@ -82,7 +44,7 @@
           <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--card-inner)] border border-[var(--border)] text-zinc-400">v0.3.0</span>
           <span id="header-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-            <span id="badge-text">Orchestrator Ready</span>
+            <span id="badge-text">Orchestrator Idle</span>
           </span>
         </div>
         <div class="flex items-center space-x-2 text-[11px] font-mono text-[var(--muted)] mt-0.5">
@@ -95,77 +57,63 @@
       </div>
     </div>
 
-    <div class="flex items-center space-x-3">
-      <!-- Swarm Controls -->
-      <button id="btn-pause-toggle" onclick="togglePauseSwarm()" class="text-xs font-mono py-1.5 px-3 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition flex items-center gap-1.5 active:scale-95">
-        <span id="btn-pause-icon">⏸️</span>
-        <span id="btn-pause-text">Pause Swarm</span>
-      </button>
-
-      <button onclick="cleanCurrentSwarm()" class="text-xs font-mono py-1.5 px-3 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 transition active:scale-95">
-        Clean Swarm
-      </button>
-
-      <!-- Theme Switcher -->
-      <div class="flex items-center bg-[var(--card-inner)] border border-[var(--border)] rounded-lg p-1 space-x-1">
-        <button onclick="changeTheme('default')" title="Indigo" class="w-3.5 h-3.5 rounded-full bg-indigo-500 hover:ring-2 ring-indigo-400 transition"></button>
-        <button onclick="changeTheme('emerald')" title="Emerald" class="w-3.5 h-3.5 rounded-full bg-emerald-500 hover:ring-2 ring-emerald-400 transition"></button>
-        <button onclick="changeTheme('oled')" title="OLED Cyan" class="w-3.5 h-3.5 rounded-full bg-sky-400 hover:ring-2 ring-sky-300 transition"></button>
-      </div>
+    <!-- Right Header: Clean Live SSE Indicator -->
+    <div class="flex items-center space-x-2 text-xs font-mono text-zinc-400 px-3 py-1.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)]">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 status-ring" id="live-dot"></span>
+      <span id="live-text">Live Observatory</span>
     </div>
   </header>
 
   <!-- =========================================================================
-       2. CENTER STAGE (Orchestrator in Center & Parallel Worker Nodes)
+       2. CENTER OBSERVATORY STAGE (Master Orchestrator + Parallel Agents Mesh)
        ========================================================================= -->
-  <main class="flex-1 p-6 flex flex-col justify-between max-w-6xl w-full mx-auto space-y-6">
+  <main class="flex-1 p-6 flex flex-col justify-center max-w-6xl w-full mx-auto">
 
-    <!-- Swarm Mesh Canvas Area -->
-    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 relative shadow-xl min-h-[360px] flex flex-col justify-between">
+    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-6 relative shadow-xl min-h-[460px] flex flex-col justify-between">
       
-      <!-- Top Bar inside Canvas -->
-      <div class="flex items-center justify-between text-xs font-mono text-[var(--muted)]">
+      <!-- Top Meta Info inside Box -->
+      <div class="flex items-center justify-between text-xs font-mono text-[var(--muted)] border-b border-[var(--border)] pb-3">
         <span class="flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-indigo-400 status-ring"></span>
           Parallel Execution Topology
         </span>
-        <span id="active-swarm-label">Active Swarm: <strong class="text-zinc-200">None</strong></span>
+        <span id="active-swarm-label">Active Swarm: <strong class="text-zinc-400">None</strong></span>
       </div>
 
-      <!-- Topology Layout: Center Orchestrator + Orbiting Worker Cards -->
-      <div class="py-6 my-auto" id="topology-area">
+      <!-- Center Body -->
+      <div class="py-8 my-auto" id="topology-area">
         
-        <!-- Empty State (When no swarm is spawned yet) -->
-        <div id="empty-state" class="text-center py-8 space-y-3">
+        <!-- Empty State (When no swarm is currently active) -->
+        <div id="empty-state" class="text-center py-12 space-y-3">
           <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-2xl mx-auto shadow-inner">
             👑
           </div>
-          <div class="text-sm font-semibold text-[var(--foreground)]">Orchestrator Awaiting Instructions</div>
+          <div class="text-sm font-semibold text-[var(--foreground)]">Orchestrator Standing By</div>
           <p class="text-xs text-[var(--muted)] font-mono max-w-md mx-auto leading-relaxed">
-            Enter a prompt in the command bar below. The Orchestrator will analyze the critical path, elastically size the required agents, and allocate isolated Git worktrees.
+            Give a task to the HiveMesh agent in your chat or terminal. The Orchestrator will compute the critical path, allocate isolated Git worktrees, and display active parallel agents here in real time.
           </p>
         </div>
 
-        <!-- Dynamic Agents Grid (Rendered when swarm active) -->
+        <!-- Dynamic Agents Grid (Shown when swarm is active) -->
         <div id="agents-grid" class="hidden space-y-6">
           
-          <!-- Center Orchestrator Crown Card -->
-          <div class="max-w-xs mx-auto p-3.5 rounded-xl bg-gradient-to-br from-indigo-950/40 to-purple-950/20 border border-indigo-500/40 text-center shadow-lg relative">
-            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-mono bg-indigo-600 text-white px-2 py-0.2 rounded-full font-bold uppercase tracking-wider">
+          <!-- Master Orchestrator Card -->
+          <div class="max-w-sm mx-auto p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 to-purple-950/20 border border-indigo-500/40 text-center shadow-lg relative">
+            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-mono bg-indigo-600 text-white px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider shadow">
               Master Orchestrator
             </span>
             <div class="text-xs font-bold text-indigo-300 mt-1" id="orch-task-summary">Coordinating Swarm</div>
-            <div class="text-[11px] font-mono text-zinc-400 mt-0.5" id="orch-plan-count">4 Parallel Agents Deployed</div>
+            <div class="text-[11px] font-mono text-zinc-400 mt-0.5" id="orch-plan-count">Parallel Agents Deployed</div>
           </div>
 
-          <!-- Connecting Lines -->
+          <!-- Connecting Vertical Line -->
           <div class="w-full flex justify-center">
             <div class="h-6 w-[2px] bg-gradient-to-b from-indigo-500 to-transparent"></div>
           </div>
 
           <!-- Parallel Agent Cards Container -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3.5" id="cards-container">
-            <!-- Dynamically populated -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="cards-container">
+            <!-- Dynamically populated from /api/status -->
           </div>
 
         </div>
@@ -174,117 +122,20 @@
 
       <!-- Bottom Canvas Footer -->
       <div class="flex items-center justify-between text-[11px] font-mono text-[var(--muted)] border-t border-[var(--border)] pt-3">
-        <span>Click on any agent card to inspect directives or send human steering</span>
-        <span class="text-emerald-400">AST Bus: TypeScript Compiler Verified</span>
+        <span>Real-time event stream active (SSE)</span>
+        <span class="text-emerald-400">SQLite FTS5 Blackboard + AST Bus Verified</span>
       </div>
-
-    </div>
-
-    <!-- =======================================================================
-         3. BOTTOM COMMAND & CHAT COCKPIT (Prompt Bar & Speech Stream)
-         ======================================================================= -->
-    <div class="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-4 shadow-xl space-y-3">
-      
-      <!-- Orchestrator Ticker / Stream Logs -->
-      <div class="h-20 overflow-y-auto font-mono text-[11px] space-y-1.5 p-2.5 rounded-xl bg-[var(--card-inner)] border border-[var(--border)] text-zinc-300" id="chat-stream">
-        <div class="flex items-center space-x-2 text-indigo-400">
-          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-          <strong>[ORCHESTRATOR]</strong>
-          <span>System initialized. Type your task in the input bar below to compute the critical path.</span>
-        </div>
-      </div>
-
-      <!-- Command Bar Form -->
-      <form onsubmit="handlePromptSubmit(event)" class="flex items-center gap-2.5">
-        <div class="relative flex-1">
-          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-400 font-mono text-sm">🐝 &gt;</span>
-          <input type="text" id="prompt-input" 
-            placeholder="What would you like the swarm to build? (e.g. 'Add WebAuthn passkeys with session refresh')..." 
-            class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[var(--card-inner)] border border-[var(--border)] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 ring-indigo-500/40 transition">
-        </div>
-
-        <button type="submit" id="btn-submit" class="text-xs font-mono font-semibold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 active:scale-95 shrink-0">
-          <span>Launch Swarm</span>
-          <span>⚡</span>
-        </button>
-      </form>
 
     </div>
 
   </main>
 
   <!-- =========================================================================
-       4. STEERING SLIDE-OVER DRAWER (Human-in-the-Loop)
-       ========================================================================= -->
-  <div id="steering-drawer" class="hidden fixed inset-y-0 right-0 w-96 bg-[var(--card)] border-l border-[var(--border)] shadow-2xl p-5 z-40 flex flex-col justify-between">
-    <div class="space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-        <div class="flex items-center space-x-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-indigo-400" id="steer-dot"></span>
-          <h3 class="text-sm font-bold font-mono text-white" id="steer-role">agent-role</h3>
-        </div>
-        <button onclick="closeSteerDrawer()" class="text-zinc-500 hover:text-white font-mono text-sm">✕</button>
-      </div>
-
-      <div class="space-y-3 text-xs font-mono">
-        <div>
-          <label class="text-[10px] text-[var(--muted)] uppercase tracking-wider block font-semibold">Assigned Directive</label>
-          <p class="text-zinc-300 text-xs mt-1 p-2.5 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] leading-relaxed" id="steer-current-task">
-            Loading directive...
-          </p>
-        </div>
-
-        <div>
-          <label class="text-[10px] text-amber-400 uppercase tracking-wider block font-bold">Human Steering & Correction</label>
-          <textarea id="steer-feedback-input" rows="4" placeholder="Type your instruction or correction (e.g. 'Don't use JWT, use session cookies instead')..."
-            class="w-full mt-1.5 p-3 rounded-lg bg-[var(--card-inner)] border border-[var(--border)] text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400/80 transition"></textarea>
-        </div>
-
-        <div class="text-[11px] text-zinc-500 leading-relaxed">
-          Submitting will freeze this agent's branch, update its contract in the SQLite blackboard, and notify peer agents.
-        </div>
-      </div>
-    </div>
-
-    <div class="pt-4 border-t border-[var(--border)] flex gap-2">
-      <button onclick="closeSteerDrawer()" class="flex-1 text-xs font-mono py-2 rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--card-inner)]">Cancel</button>
-      <button onclick="submitSteeringCorrection()" class="flex-1 text-xs font-mono font-bold py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black transition">Broadcast Directive</button>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       5. REAL-TIME LOGIC & SSE STREAMING
+       3. REAL-TIME LOGIC & SSE STREAMING
        ========================================================================= -->
   <script>
-    function changeTheme(theme) {
-      if (theme === 'default') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
-      localStorage.setItem('hivemesh-theme', theme);
-    }
-    const savedTheme = localStorage.getItem('hivemesh-theme');
-    if (savedTheme) changeTheme(savedTheme);
-
     let activeSwarm = null;
     let currentPlan = {};
-    let isPaused = false;
-    let selectedAgentForSteer = null;
-
-    function addLog(tag, message, color = "#9ca3af") {
-      const stream = document.getElementById('chat-stream');
-      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-      const row = document.createElement('div');
-      row.className = "flex items-start space-x-2";
-      row.innerHTML = `
-        <span class="text-zinc-500 shrink-0 font-mono">${time}</span>
-        <span class="font-bold shrink-0 font-mono" style="color: ${color};">[${tag}]</span>
-        <span class="break-words font-mono text-zinc-300 text-[11px]">${escapeHtml(message)}</span>
-      `;
-      stream.appendChild(row);
-      stream.scrollTop = stream.scrollHeight;
-    }
 
     function escapeHtml(str) {
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -301,7 +152,6 @@
         document.getElementById('proj-branch').innerText = data.project.branch;
         document.getElementById('proj-commit').innerText = '#' + data.project.commit;
 
-        isPaused = !!data.isPaused;
         currentPlan = data.plan || {};
 
         if (data.swarms && data.swarms.length > 0) {
@@ -311,17 +161,15 @@
           activeSwarm = null;
           renderEmptyState();
         }
-
-        updatePauseButtonState(isPaused);
       } catch (err) {
-        addLog("ERROR", "Failed to fetch status: " + err.message, "#f43f5e");
+        console.error("Failed to fetch status:", err);
       }
     }
 
     function renderEmptyState() {
       document.getElementById('empty-state').classList.remove('hidden');
       document.getElementById('agents-grid').classList.add('hidden');
-      document.getElementById('active-swarm-label').innerHTML = `Active Swarm: <strong class="text-zinc-400">None</strong>`;
+      document.getElementById('active-swarm-label').innerHTML = `Active Swarm: <strong class="text-zinc-500">None</strong>`;
       document.getElementById('header-status-badge').className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center gap-1";
       document.getElementById('badge-text').innerText = "Orchestrator Idle";
     }
@@ -343,161 +191,36 @@
         const taskText = plan[wt.role] || "Executing domain responsibilities in isolated worktree";
 
         return `
-          <div onclick="openSteerDrawer('${escapeHtml(wt.role)}', '${escapeHtml(taskText)}', '${color}')" 
-            class="p-4 rounded-xl bg-[var(--card-inner)] border border-[var(--border)] hover:border-[var(--border-bright)] cursor-pointer transition shadow-md hover:scale-[1.02] space-y-2.5">
+          <div class="p-4 rounded-xl bg-[var(--card-inner)] border border-[var(--border)] hover:border-[var(--border-bright)] transition shadow-md space-y-2.5">
             <div class="flex items-center justify-between">
               <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: ${color};">${escapeHtml(wt.role)}</span>
-              <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">${escapeHtml(wt.status)}</span>
+              <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-semibold">${escapeHtml(wt.status)}</span>
             </div>
-            <p class="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed font-mono">${escapeHtml(taskText)}</p>
-            <div class="pt-2 border-t border-[var(--border)] flex items-center justify-between text-[10px] font-mono text-[var(--muted)]">
-              <span class="truncate max-w-[130px]">🌿 ${escapeHtml(wt.branch)}</span>
-              <span class="text-indigo-400 font-semibold hover:underline">Steer &rarr;</span>
+            <p class="text-[11px] text-zinc-300 leading-relaxed font-mono line-clamp-3">${escapeHtml(taskText)}</p>
+            <div class="pt-2 border-t border-[var(--border)] space-y-1 text-[10px] font-mono text-[var(--muted)]">
+              <div class="truncate text-zinc-400" title="${escapeHtml(wt.branch)}">🌿 ${escapeHtml(wt.branch)}</div>
+              <div class="truncate text-zinc-500" title="${escapeHtml(wt.path)}">📁 ${escapeHtml(wt.path)}</div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function openSteerDrawer(role, task, color) {
-      selectedAgentForSteer = { role, task, color };
-      document.getElementById('steering-drawer').classList.remove('hidden');
-      document.getElementById('steer-role').innerText = role;
-      document.getElementById('steer-dot').style.backgroundColor = color || '#6366f1';
-      document.getElementById('steer-current-task').innerText = task;
-      document.getElementById('steer-feedback-input').value = '';
-      document.getElementById('steer-feedback-input').focus();
-    }
-
-    function closeSteerDrawer() {
-      document.getElementById('steering-drawer').classList.add('hidden');
-      selectedAgentForSteer = null;
-    }
-
-    async function submitSteeringCorrection() {
-      if (!selectedAgentForSteer || !activeSwarm) return;
-      const feedback = document.getElementById('steer-feedback-input').value.trim();
-      if (!feedback) {
-        alert("Please enter a steering directive");
-        return;
-      }
-
-      addLog("STEERING", `Intervening on [${selectedAgentForSteer.role}]: "${feedback}"`, "#f59e0b");
-
-      try {
-        const res = await fetch('/api/swarm/steer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            swarmId: activeSwarm.id,
-            role: selectedAgentForSteer.role,
-            feedback: feedback
-          })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        addLog("ORCHESTRATOR", `Directive broadcasted to [${selectedAgentForSteer.role}]. Stored in SQLite blackboard.`, "#10b981");
-        closeSteerDrawer();
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", "Failed to steer: " + err.message, "#f43f5e");
-      }
-    }
-
-    function updatePauseButtonState(paused) {
-      const btnText = document.getElementById('btn-pause-text');
-      const btnIcon = document.getElementById('btn-pause-icon');
-      if (paused) {
-        btnText.innerText = "Resume Swarm";
-        btnIcon.innerText = "▶️";
-      } else {
-        btnText.innerText = "Pause Swarm";
-        btnIcon.innerText = "⏸️";
-      }
-    }
-
-    async function togglePauseSwarm() {
-      if (!activeSwarm) return;
-      isPaused = !isPaused;
-      updatePauseButtonState(isPaused);
-
-      const endpoint = isPaused ? '/api/swarm/pause' : '/api/swarm/resume';
-      addLog("COMMAND", isPaused ? "Pausing swarm execution for human review..." : "Resuming swarm execution...", "#f59e0b");
-
-      try {
-        await fetch(endpoint, { method: 'POST' });
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", err.message, "#f43f5e");
-      }
-    }
-
-    async function handlePromptSubmit(e) {
-      e.preventDefault();
-      const input = document.getElementById('prompt-input');
-      const prompt = input.value.trim();
-      if (!prompt) return;
-
-      addLog("USER", prompt, "#ffffff");
-      input.value = '';
-
-      addLog("ORCHESTRATOR", `Analyzing task: "${prompt}". Decomposing into parallel critical path...`, "#818cf8");
-
-      try {
-        const res = await fetch('/api/swarm/orchestrate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        addLog("ORCHESTRATOR", `Spawned ${data.roles.length} elastic agents in isolated Git worktrees. Ready for execution.`, "#10b981");
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", "Orchestration failed: " + err.message, "#f43f5e");
-      }
-    }
-
-    async function cleanCurrentSwarm() {
-      if (!activeSwarm) {
-        alert("No active swarm to clean");
-        return;
-      }
-      if (!confirm(`Destroy worktrees for ${activeSwarm.id}?`)) return;
-
-      try {
-        await fetch('/api/swarm/clean', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ swarmId: activeSwarm.id })
-        });
-        addLog("ORCHESTRATOR", `Swarm ${activeSwarm.id} destroyed and worktrees cleaned.`, "#f43f5e");
-        fetchStatus();
-      } catch (err) {
-        addLog("ERROR", err.message, "#f43f5e");
-      }
-    }
-
     function initSSE() {
       if (window.location.protocol.startsWith('http')) {
         const evt = new EventSource('/events');
-        evt.onmessage = (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            if (data.message) addLog("ENGINE", data.message, "#38bdf8");
-          } catch {}
+        evt.onopen = () => {
+          document.getElementById('live-dot').className = "w-2 h-2 rounded-full bg-emerald-400 status-ring";
+          document.getElementById('live-text').innerText = "Live Observatory";
+        };
+        evt.onerror = () => {
+          document.getElementById('live-dot').className = "w-2 h-2 rounded-full bg-rose-500";
+          document.getElementById('live-text').innerText = "Disconnected";
         };
         evt.addEventListener('swarm_created', () => fetchStatus());
         evt.addEventListener('swarm_cleaned', () => fetchStatus());
-        evt.addEventListener('agent_steered', (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            addLog("BROADCAST", data.message, "#f59e0b");
-            fetchStatus();
-          } catch {}
-        });
+        evt.addEventListener('agent_steered', () => fetchStatus());
+        evt.addEventListener('orchestrator_thinking', () => fetchStatus());
       }
     }
 
