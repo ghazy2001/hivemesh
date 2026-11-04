@@ -48,14 +48,41 @@
       <div id="topology-area" class="w-full my-auto">
         
         <!-- 1. EMPTY / IDLE STATE (Awaiting Command) -->
-        <div id="empty-state" class="text-center py-12 space-y-4">
+        <div id="empty-state" class="text-center py-10 space-y-5">
           <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-3xl mx-auto shadow-inner">
             👑
           </div>
-          <div class="text-base font-semibold text-white tracking-tight">Master Orchestrator Standing By</div>
-          <p class="text-xs text-[var(--muted)] font-mono max-w-md mx-auto leading-relaxed">
-            Give a task to the HiveMesh agent in your chat or terminal. The Orchestrator will compute the critical path, allocate isolated Git worktrees, and display active parallel agents here in real time.
-          </p>
+          <div class="space-y-1">
+            <div class="text-base font-semibold text-white tracking-tight">Master Orchestrator Standing By</div>
+            <p class="text-xs text-[var(--muted)] font-mono max-w-md mx-auto leading-relaxed">
+              Enter what you'd like to build below, or send your prompt directly in chat. The Orchestrator will analyze the critical path, elastically size parallel agents, and allocate isolated Git worktrees.
+            </p>
+          </div>
+
+          <!-- Direct In-Page Command Launcher -->
+          <div class="max-w-xl mx-auto pt-2">
+            <form onsubmit="handleUserLaunch(event)" class="relative flex items-center">
+              <span class="absolute left-4 text-base text-indigo-400">⚡</span>
+              <input
+                id="prompt-input"
+                type="text"
+                placeholder="What would you like the swarm to build? (e.g. 'Add Stripe billing with Webhooks')..."
+                class="w-full pl-11 pr-28 py-3.5 rounded-xl bg-[var(--card-inner)] border border-[var(--border)] focus:border-indigo-500 focus:outline-none text-xs font-mono text-white placeholder-zinc-500 transition shadow-lg"
+                autocomplete="off"
+              />
+              <button
+                type="submit"
+                id="launch-btn"
+                class="absolute right-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition flex items-center gap-1.5 shadow cursor-pointer"
+              >
+                <span>Launch</span>
+                <span>⚡</span>
+              </button>
+            </form>
+            <div class="flex items-center justify-center gap-2 text-[10px] font-mono text-zinc-500 mt-2.5">
+              <span>Press <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">Enter ↵</kbd> or click Launch to orchestrate live</span>
+            </div>
+          </div>
         </div>
 
         <!-- 2. ANALYZING & SIZING STATE (Dynamic Critical Path Decomposition) -->
@@ -119,9 +146,10 @@
             <div class="text-xs font-bold text-indigo-200 mt-1 line-clamp-2" id="orch-task-summary">
               Coordinating Swarm
             </div>
-            <div class="text-[11px] font-mono text-emerald-400 mt-1 flex items-center justify-center gap-1.5" id="orch-plan-count">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span>
-              <span>Parallel Agents Active</span>
+            <div class="text-[11px] font-mono text-emerald-400 mt-1 flex items-center justify-center gap-3" id="orch-plan-count">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-ring"></span><span>Parallel Agents Active</span></span>
+              <span class="text-zinc-600">•</span>
+              <button onclick="cleanActiveSwarm()" class="text-zinc-400 hover:text-rose-400 transition cursor-pointer flex items-center gap-1 text-[11px]" title="Reset swarm and send another task"><span>🔄</span><span class="underline underline-offset-2">New Task</span></button>
             </div>
           </div>
 
@@ -152,6 +180,71 @@
 
     function escapeHtml(str) {
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    async function handleUserLaunch(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('prompt-input');
+      const promptText = input?.value?.trim();
+      if (!promptText) return;
+
+      const btn = document.getElementById('launch-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Orchestrating...';
+      }
+
+      showAnalyzing(promptText, ['Analyzing domains...']);
+
+      try {
+        const res = await fetch('/api/swarm/orchestrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText })
+        });
+        const data = await res.json();
+        if (data.success && data.swarm) {
+          activeSwarm = data.swarm;
+          currentPlan = data.plan || {};
+        }
+      } catch (err) {
+        console.error('Launch failed:', err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Launch</span><span>⚡</span>';
+        }
+        if (input) input.value = '';
+      }
+    }
+
+    async function cleanActiveSwarm() {
+      if (!activeSwarm && !activeSwarm?.id) {
+        try {
+          const res = await fetch('/api/status');
+          const data = await res.json();
+          if (data.swarms && data.swarms.length > 0) {
+            activeSwarm = data.swarms[0];
+          }
+        } catch {}
+      }
+
+      if (!activeSwarm) {
+        renderEmptyState();
+        return;
+      }
+
+      try {
+        await fetch('/api/swarm/clean', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ swarmId: activeSwarm.id })
+        });
+        activeSwarm = null;
+        renderEmptyState();
+      } catch (err) {
+        console.error('Clean failed:', err);
+      }
     }
 
     async function fetchStatus() {
