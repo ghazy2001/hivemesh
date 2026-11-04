@@ -20,6 +20,7 @@ let currentSwarmPlan = {};
 let currentSessionTitle = "Autonomous Swarm & Agensi Skill Launch";
 let currentSwarmPrompt = "";
 let orchestratorPhase = "idle";
+let agentActivities = {};
 export function broadcastEvent(event, data) {
     const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of clients) {
@@ -222,6 +223,7 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                         totalWorktrees,
                         isPaused: isSwarmPaused,
                         plan: activePlan,
+                        activities: agentActivities,
                         blackboard: {
                             entries: bbEntries,
                             stats: bbStats,
@@ -257,6 +259,26 @@ export function startUiServer(requestedPort = 4242, autoOpen = true) {
                     }
                     res.writeHead(400, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({ error: "Missing or invalid title" }));
+                }
+                catch (err) {
+                    res.writeHead(500, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ error: String(err) }));
+                }
+                return;
+            }
+            // 2c. Agent Live Activity Update API
+            if (url === "/api/agent/activity" && req.method === "POST") {
+                try {
+                    const body = await parseBody(req);
+                    if (body.role && body.action) {
+                        agentActivities[body.role] = body.action;
+                        broadcastEvent("agent_activity", { role: body.role, action: body.action });
+                        res.writeHead(200, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ success: true, role: body.role, action: body.action }));
+                        return;
+                    }
+                    res.writeHead(400, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ error: "Missing role or action" }));
                 }
                 catch (err) {
                     res.writeHead(500, { "Content-Type": "application/json" });
