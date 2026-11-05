@@ -251,6 +251,42 @@ export function getAntigravityBrainState(selectedId) {
             }
             catch { }
         }
+        // Direct synchronization with .system_generated/subagents directory
+        const subagentsDir = path.join(brainDir, target.id, ".system_generated", "subagents");
+        if (fs.existsSync(subagentsDir)) {
+            try {
+                const sFiles = fs.readdirSync(subagentsDir).filter((f) => f.endsWith(".json"));
+                for (const sf of sFiles) {
+                    try {
+                        const raw = JSON.parse(fs.readFileSync(path.join(subagentsDir, sf), "utf-8"));
+                        const subId = raw.conversationId || sf.replace(".json", "");
+                        const role = raw.subagentDescriptor?.role || "Subagent";
+                        const type = raw.subagentDescriptor?.typeName || "self";
+                        if (!subagentsMap.has(role)) {
+                            subagentsMap.set(role, {
+                                id: subId,
+                                role,
+                                type,
+                                prompt: "",
+                                mission: `Execute autonomous directives for ${role}`,
+                                action: "Operating in isolated workspace",
+                                status: "RUNNING",
+                                isRunning: true,
+                                files: [],
+                                steps: []
+                            });
+                        }
+                        else {
+                            const sa = subagentsMap.get(role);
+                            if (!sa.id)
+                                sa.id = subId;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
         // Verify subagents status, outputs, and created files
         for (const [_, sa] of subagentsMap.entries()) {
             if (sa.id) {
@@ -295,14 +331,19 @@ export function getAntigravityBrainState(selectedId) {
                         sa.steps = subSteps;
                         if (subLines.length > 0) {
                             const stat = fs.statSync(subTPath);
-                            const isRecent = (Date.now() - stat.mtimeMs < 180000);
-                            const lastStep = JSON.parse(subLines[subLines.length - 1]);
-                            const isDone = (lastStep.status === "DONE") || (!isRecent);
-                            sa.status = isDone ? "DONE" : "RUNNING";
-                            sa.isRunning = !isDone;
-                            sa.action = isDone
-                                ? `Completed • Generated ${files.length} verified file(s)`
-                                : "Active in isolated subagent workspace";
+                            const ageSec = (Date.now() - stat.mtimeMs) / 1000;
+                            const isRunning = (ageSec < 75);
+                            sa.status = isRunning ? "RUNNING" : "DONE";
+                            sa.isRunning = isRunning;
+                            if (isRunning) {
+                                const lastStep = subSteps.length > 0 ? subSteps[subSteps.length - 1] : null;
+                                sa.action = lastStep ? lastStep.label : "Active in isolated subagent workspace";
+                            }
+                            else {
+                                sa.action = files.length > 0
+                                    ? `Completed • Generated ${files.length} verified file(s)`
+                                    : "Completed task and reported to parent agent ✓";
+                            }
                         }
                     }
                     catch { }
